@@ -1,4 +1,4 @@
-use crate::mhguide::RefGenomeVersion;
+use crate::mhguide::{three_letter_protein_modification, RefGenomeVersion};
 use clap::Parser;
 use rayon::prelude::*;
 use serde::Serialize;
@@ -92,7 +92,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap_or_default()
                 .starts_with("p.")
             {
-                variant.protein_modification.clone().unwrap_or_default()
+                three_letter_protein_modification(&variant.protein_modification.clone().unwrap_or_default())
             } else {
                 String::new()
             },

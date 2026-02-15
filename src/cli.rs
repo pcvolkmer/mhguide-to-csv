@@ -4,7 +4,7 @@ use clap::Parser;
 #[derive(Parser)]
 #[command(author, version, about)]
 #[command(arg_required_else_help(true))]
-pub struct Cli {
+pub(crate) struct Cli {
     #[arg(help = "Zu lesende JSON-Datei")]
-    pub input_file: PathBuf,
+    pub(crate) input_file: PathBuf,
 }

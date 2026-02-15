@@ -137,7 +137,65 @@ impl Variant {
             String::new()
         }
     }
+}
 
+#[allow(clippy::expect_used)]
+pub(crate) fn three_letter_protein_modification(short: &str) -> String {
+    fn map_value(value: &str) -> String {
+        match value {
+            "*" => "*",
+            "=" => "=",
+            "fs" => "fs",
+            "F" => "Phe",
+            "L" => "Leu",
+            "S" => "Ser",
+            "Y" => "Tyr",
+            "C" => "Cys",
+            "W" => "Trp",
+            "P" => "Pro",
+            "H" => "His",
+            "Q" => "Gln",
+            "R" => "Arg",
+            "I" => "Ile",
+            "M" => "Met",
+            "T" => "Thr",
+            "N" => "Asn",
+            "K" => "Lys",
+            "V" => "Val",
+            "A" => "Ala",
+            "D" => "Asp",
+            "E" => "Glu",
+            "G" => "Gly",
+            _ => value,
+        }
+        .to_string()
+    }
+
+    let regex = Regex::new(r"^p\.(?<ref>[*FLSYCWPHQRIMTNKVADEG])(?<pos>\d+|del|ins|delins)(?<alt>[*=FLSYCWPHQRIMTNKVADEG]|fs)$")
+        .expect("Invalid regex");
+
+    if let Some(captures) = regex.captures(short) {
+        let ref_capture = match captures.name("ref") {
+            Some(m) => m.as_str(),
+            None => short,
+        };
+        let pos_capture = match captures.name("pos") {
+            Some(m) => m.as_str(),
+            None => short,
+        };
+        let alt_capture = match captures.name("alt") {
+            Some(m) => m.as_str(),
+            None => short,
+        };
+        return format!(
+            "p.{}{}{}",
+            map_value(ref_capture),
+            pos_capture,
+            map_value(alt_capture)
+        );
+    }
+
+    short.to_string()
 }
 
 #[derive(Debug, PartialEq)]
@@ -330,5 +388,39 @@ mod tests {
     fn test_dna_change_parsing(#[case] case: &str, #[case] expected: DnaChange) {
         let actual = DnaChange::from_str(case);
         assert_eq!(actual, Ok(expected));
+    }
+
+    #[rstest]
+    #[case("p.F123G", "p.Phe123Gly")]
+    #[case("p.L123F", "p.Leu123Phe")]
+    #[case("p.S123L", "p.Ser123Leu")]
+    #[case("p.Y123S", "p.Tyr123Ser")]
+    #[case("p.C123Y", "p.Cys123Tyr")]
+    #[case("p.W123C", "p.Trp123Cys")]
+    #[case("p.P123W", "p.Pro123Trp")]
+    #[case("p.H123P", "p.His123Pro")]
+    #[case("p.Q123H", "p.Gln123His")]
+    #[case("p.R123Q", "p.Arg123Gln")]
+    #[case("p.I123R", "p.Ile123Arg")]
+    #[case("p.M123I", "p.Met123Ile")]
+    #[case("p.T123M", "p.Thr123Met")]
+    #[case("p.N123T", "p.Asn123Thr")]
+    #[case("p.K123N", "p.Lys123Asn")]
+    #[case("p.V123K", "p.Val123Lys")]
+    #[case("p.A123V", "p.Ala123Val")]
+    #[case("p.D123A", "p.Asp123Ala")]
+    #[case("p.E123D", "p.Glu123Asp")]
+    #[case("p.G123E", "p.Gly123Glu")]
+    #[case("p.Y123=", "p.Tyr123=")]
+    #[case("p.Y123fs", "p.Tyr123fs")]
+    // Examples from Onkostar Notices
+    #[case("p.L858R", "p.Leu858Arg")]
+    #[case("p.*del*", "p.*del*")]
+    #[case("p.V600*", "p.Val600*")]
+    // Not mappable - keep as is
+    #[case("p.X123X", "p.X123X")]
+    #[case("c.123A>C", "c.123A>C")]
+    fn test_three_letter_protein_modification(#[case] short: &str, #[case] long: &str) {
+        assert_eq!(three_letter_protein_modification(short), long);
     }
 }
