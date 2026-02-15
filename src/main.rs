@@ -1,3 +1,4 @@
+use crate::hgnc::Genes;
 use crate::mhguide::{three_letter_protein_modification, RefGenomeVersion};
 use clap::Parser;
 use rayon::prelude::*;
@@ -5,6 +6,7 @@ use serde::Serialize;
 use std::fs;
 
 mod cli;
+mod hgnc;
 mod mhguide;
 
 #[derive(Debug, Serialize)]
@@ -25,6 +27,12 @@ struct Csv {
     protein: String,
     #[serde(rename = "Chromosom")]
     chromosome: String,
+    #[serde(rename = "EnsemblID")]
+    ensembl_id: String,
+    #[serde(rename = "HGNC ID")]
+    hgnc_id: String,
+    #[serde(rename = "HGNC Name")]
+    hgnc_name: String,
     #[serde(rename = "Start")]
     start: String,
     #[serde(rename = "Ende")]
@@ -47,6 +55,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = cli::Cli::parse();
     let json = std::fs::read_to_string(cli.input_file.clone())?;
     let mhguide = serde_json::from_str::<mhguide::MhGuide>(&json)?;
+
+    let genes = Genes::new();
 
     let records = mhguide
         .variants
@@ -73,6 +83,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
             gene: variant.gene_symbol.clone().unwrap_or_default(),
             chromosome: variant.chromosome.clone().unwrap_or_default(),
+            ensembl_id: genes
+                .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
+                .map(|gene| gene.ensembl_id)
+                .unwrap_or_default().unwrap_or_default(),
+            hgnc_id: genes
+                .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
+                .map(|gene| gene.hgnc_id)
+                .unwrap_or_default(),
+            hgnc_name: genes
+                .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
+                .map(|gene| gene.name)
+                .unwrap_or_default(),
             cdna: if variant
                 .transcript_hgvs_modified_object
                 .clone()
@@ -92,7 +114,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap_or_default()
                 .starts_with("p.")
             {
-                three_letter_protein_modification(&variant.protein_modification.clone().unwrap_or_default())
+                three_letter_protein_modification(
+                    &variant.protein_modification.clone().unwrap_or_default(),
+                )
             } else {
                 String::new()
             },
