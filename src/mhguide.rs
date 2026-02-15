@@ -1,0 +1,334 @@
+use regex::Regex;
+use serde::{Deserialize, Deserializer};
+use std::str::FromStr;
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub(crate) struct MhGuide {
+    #[serde(rename = "GENERAL")]
+    pub(crate) general: General,
+    #[serde(rename = "VARIANT_LONG_LIST")]
+    pub(crate) variants: Vec<Variant>,
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum RefGenomeVersion {
+    Hg19,
+    Hg38,
+}
+
+impl<'de> Deserialize<'de> for RefGenomeVersion {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value: u8 = Deserialize::deserialize(deserializer)?;
+        match value {
+            37 => Ok(RefGenomeVersion::Hg19),
+            38 => Ok(RefGenomeVersion::Hg38),
+            _ => Err(serde::de::Error::custom(format!(
+                "Invalid RefGenomeVersion: {value}"
+            ))),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct PatientIdentifier {
+    pub(crate) h_number: String,
+    pub(crate) pid: String,
+}
+
+impl<'de> Deserialize<'de> for PatientIdentifier {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value: String = Deserialize::deserialize(deserializer)?;
+        let parts: Vec<&str> = value.split('_').collect();
+        if parts.len() != 2 {
+            return Err(serde::de::Error::custom("Invalid PatientIdentifier format"));
+        }
+        let h_number = parts[0].to_string();
+        let pid = parts[1].to_string();
+        Ok(PatientIdentifier { h_number, pid })
+    }
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub(crate) struct General {
+    #[serde(rename = "ORDER_DATE")]
+    pub(crate) order_date: String,
+    #[serde(rename = "REF_GENOME_VERSION")]
+    pub(crate) ref_genome_version: RefGenomeVersion,
+    #[serde(rename = "PATIENT_IDENTIFIER")]
+    pub(crate) patient_identifier: PatientIdentifier,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub(crate) struct Variant {
+    #[serde(rename = "GENE_SYMBOL")]
+    pub(crate) gene_symbol: Option<String>,
+    #[serde(rename = "PROTEIN_MODIFICATION")]
+    pub(crate) protein_modification: Option<String>,
+    #[serde(rename = "PROTEIN_VARIANT_TYPE")]
+    pub(crate) protein_variant_type: Option<String>,
+    #[serde(rename = "CHROMOSOMAL_MODIFIED_OBJECT")]
+    pub(crate) chromosome: Option<String>,
+    #[serde(rename = "CHROMOSOMAL_MODIFICATION")]
+    pub(crate) chromosome_modification: Option<String>,
+    #[serde(rename = "TRANSCRIPT_HGVS_MODIFIED_OBJECT")]
+    pub(crate) transcript_hgvs_modified_object: Option<String>,
+    #[serde(rename = "VARIANT_ALLELE_FREQUENCY_IN_TUMOR")]
+    pub(crate) variant_allele_frequency_in_tumor: Option<f32>,
+    #[serde(rename = "DBSNP")]
+    pub(crate) db_snp: Option<String>,
+    #[serde(rename = "COPY_NUMBER")]
+    pub(crate) copy_number: Option<f32>,
+}
+
+impl Variant {
+    #[allow(clippy::expect_used)]
+    pub(crate) fn ref_allele(&self) -> String {
+        if let Some(chromosome_modification) = &self.chromosome_modification {
+            match DnaChange::from_str(chromosome_modification) {
+                Ok(change) => change.ref_allele.unwrap_or_default(),
+                Err(_) => String::new(),
+            }
+        } else {
+            String::new()
+        }
+    }
+
+    #[allow(clippy::expect_used)]
+    pub(crate) fn alt_allele(&self) -> String {
+        if let Some(chromosome_modification) = &self.chromosome_modification {
+            match DnaChange::from_str(chromosome_modification) {
+                Ok(change) => change.alt_allele.unwrap_or_default(),
+                Err(_) => String::new(),
+            }
+        } else {
+            String::new()
+        }
+    }
+
+    #[allow(clippy::expect_used)]
+    pub(crate) fn start(&self) -> String {
+        if let Some(chromosome_modification) = &self.transcript_hgvs_modified_object {
+            match DnaChange::from_str(chromosome_modification) {
+                Ok(change) => change.start.to_string(),
+                Err(_) => String::new(),
+            }
+        } else {
+            String::new()
+        }
+    }
+
+    #[allow(clippy::expect_used)]
+    pub(crate) fn end(&self) -> String {
+        if let Some(chromosome_modification) = &self.transcript_hgvs_modified_object {
+            match DnaChange::from_str(chromosome_modification) {
+                Ok(change) => match change.end {
+                    Some(end) => end.to_string(),
+                    _ => String::new(),
+                },
+                Err(_) => String::new(),
+            }
+        } else {
+            String::new()
+        }
+    }
+
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct DnaChange {
+    start: i64,
+    end: Option<i64>,
+
+    ref_allele: Option<String>,
+    alt_allele: Option<String>,
+}
+
+impl FromStr for DnaChange {
+    type Err = String;
+
+    #[allow(clippy::expect_used)]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let regexes = [
+            Regex::new(r"(?P<type>[cg])\.(?P<start>-?\d+)(?P<ref>[ACGT])>(?P<alt>[ACGT])$")
+                .expect("Invalid regex"),
+            Regex::new(r"(?P<type>[cg])\.(?P<start>-?\d+)(?:_(?P<end>-?\d+))?del$")
+                .expect("Invalid regex"),
+            Regex::new(r"(?P<type>[cg])\.(?P<start>-?\d+)_-?(?P<end>-?\d+)ins(?P<alt>[ACGT]+)$")
+                .expect("Invalid regex"),
+            Regex::new(r"(?P<type>[cg])\.(?P<start>-?\d+)_-?(?P<end>-?\d+)delins(?P<alt>[ACGT]+)$")
+                .expect("Invalid regex"),
+        ];
+
+        for regex in &regexes {
+            if let Some(captures) = regex.captures(s) {
+                let start = captures["start"].parse::<i64>().unwrap_or_default();
+                let end = captures
+                    .name("end")
+                    .map_or(0, |m| m.as_str().parse::<i64>().unwrap_or_default());
+                let ref_allele = captures.name("ref").map(|m| m.as_str().into());
+                let alt_allele = captures.name("alt").map(|m| m.as_str().into());
+
+                let end = if end == 0 { None } else { Some(end) };
+                return Ok(DnaChange {
+                    start,
+                    end,
+                    ref_allele,
+                    alt_allele,
+                });
+            }
+        }
+        Err("Invalid DNA change format".to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::mhguide::*;
+    use rstest::rstest;
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_sv_deserialization() {
+        static SV_MHGUIDE: &str = include_str!("../testfiles/sv-mhguide.json");
+
+        let mhguide = serde_json::from_str::<MhGuide>(SV_MHGUIDE).unwrap();
+        assert_eq!(
+            mhguide,
+            MhGuide {
+                general: General {
+                    order_date: "2026-02-11".to_string(),
+                    ref_genome_version: RefGenomeVersion::Hg19,
+                    patient_identifier: PatientIdentifier {
+                        h_number: "H10000-26".to_string(),
+                        pid: "PID0123456".to_string()
+                    }
+                },
+                variants: vec![Variant {
+                    gene_symbol: Some("BRAF".to_string()),
+                    protein_modification: Some("p.A123V".to_string()),
+                    protein_variant_type: Some("SNV".to_string()),
+                    chromosome: Some("chr1".to_string()),
+                    chromosome_modification: Some("g.12345678G>A".to_string()),
+                    transcript_hgvs_modified_object: Some("c.123C>T".to_string()),
+                    variant_allele_frequency_in_tumor: Some(42.42),
+                    db_snp: Some("rs202602111".to_string()),
+                    copy_number: None
+                }]
+            }
+        );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_sv_del_deserialization() {
+        static SV_MHGUIDE: &str = include_str!("../testfiles/sv_del-mhguide.json");
+
+        let mhguide = serde_json::from_str::<MhGuide>(SV_MHGUIDE).unwrap();
+        assert_eq!(
+            mhguide,
+            MhGuide {
+                general: General {
+                    order_date: "2026-02-11".to_string(),
+                    ref_genome_version: RefGenomeVersion::Hg19,
+                    patient_identifier: PatientIdentifier {
+                        h_number: "H10000-26".to_string(),
+                        pid: "PID0123456".to_string()
+                    }
+                },
+                variants: vec![Variant {
+                    gene_symbol: Some("BRAF".to_string()),
+                    protein_modification: None,
+                    protein_variant_type: None,
+                    chromosome: Some("chr1".to_string()),
+                    chromosome_modification: Some("g.12345670_12345678del".to_string()),
+                    transcript_hgvs_modified_object: Some("c.120-1_128_1del".to_string()),
+                    variant_allele_frequency_in_tumor: Some(42.42),
+                    db_snp: Some("rs202602111".to_string()),
+                    copy_number: None
+                }]
+            }
+        );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_cnv_deserialization() {
+        static SV_MHGUIDE: &str = include_str!("../testfiles/cnv-mhguide.json");
+
+        let mhguide = serde_json::from_str::<MhGuide>(SV_MHGUIDE).unwrap();
+        assert_eq!(
+            mhguide,
+            MhGuide {
+                general: General {
+                    order_date: "2026-02-11".to_string(),
+                    ref_genome_version: RefGenomeVersion::Hg19,
+                    patient_identifier: PatientIdentifier {
+                        h_number: "H10000-26".to_string(),
+                        pid: "PID0123456".to_string()
+                    }
+                },
+                variants: vec![Variant {
+                    gene_symbol: Some("BRAF".to_string()),
+                    protein_modification: None,
+                    protein_variant_type: None,
+                    chromosome: Some("chr1".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: None,
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(12.34)
+                }]
+            }
+        );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_ref_allele() {
+        static SV_MHGUIDE: &str = include_str!("../testfiles/sv-mhguide.json");
+
+        let mhguide = serde_json::from_str::<MhGuide>(SV_MHGUIDE).unwrap();
+        assert_eq!(mhguide.variants.len(), 1);
+        assert_eq!(mhguide.variants.first().unwrap().ref_allele(), "G");
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_alt_allele() {
+        static SV_MHGUIDE: &str = include_str!("../testfiles/sv-mhguide.json");
+
+        let mhguide = serde_json::from_str::<MhGuide>(SV_MHGUIDE).unwrap();
+        assert_eq!(mhguide.variants.len(), 1);
+        assert_eq!(mhguide.variants.first().unwrap().alt_allele(), "A");
+    }
+
+    #[rstest]
+    #[case("c.123C>T",
+        DnaChange{ start: 123, end: None, ref_allele: Some("C".to_string()), alt_allele: Some("T".to_string()) }
+    )]
+    #[case("c.-123C>T",
+        DnaChange{ start: -123, end: None, ref_allele: Some("C".to_string()), alt_allele: Some("T".to_string()) }
+    )]
+    #[case("c.123_124insA",
+        DnaChange{ start: 123, end: Some(124), ref_allele: None, alt_allele: Some("A".to_string()) }
+    )]
+    #[case("c.123_124del",
+        DnaChange{ start: 123, end: Some(124), ref_allele: None, alt_allele: None }
+    )]
+    #[case("c.-123_123del",
+        DnaChange{ start: -123, end: Some(123), ref_allele: None, alt_allele: None }
+    )]
+    #[case("c.123_124delinsCTGA",
+        DnaChange{ start: 123, end: Some(124), ref_allele: None, alt_allele: Some("CTGA".to_string()) }
+    )]
+    fn test_dna_change_parsing(#[case] case: &str, #[case] expected: DnaChange) {
+        let actual = DnaChange::from_str(case);
+        assert_eq!(actual, Ok(expected));
+    }
+}

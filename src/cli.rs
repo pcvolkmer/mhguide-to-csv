@@ -1,0 +1,10 @@
+use std::path::PathBuf;
+use clap::Parser;
+
+#[derive(Parser)]
+#[command(author, version, about)]
+#[command(arg_required_else_help(true))]
+pub struct Cli {
+    #[arg(help = "Zu lesende JSON-Datei")]
+    pub input_file: PathBuf,
+}
