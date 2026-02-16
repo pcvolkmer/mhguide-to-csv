@@ -171,7 +171,7 @@ pub(crate) fn three_letter_protein_modification(short: &str) -> String {
         .to_string()
     }
 
-    let regex = Regex::new(r"^p\.(?<refA>[*FLSYCWPHQRIMTNKVADEG])?(?<posA>\d+)?(?<sep>_)?(?<refB>[*FLSYCWPHQRIMTNKVADEG])(?<posB>\d+)(?<type>del|ins|delins)?(?<alt>[*=FLSYCWPHQRIMTNKVADEG]|fs)$")
+    let regex = Regex::new(r"^p\.(?<refA>[*FLSYCWPHQRIMTNKVADEG])?(?<posA>\d+)?(?<sep>_)?(?<refB>[*FLSYCWPHQRIMTNKVADEG])(?<posB>\d+)(?<type>del|ins|delins)?(?<alt>[*=FLSYCWPHQRIMTNKVADEG]+|fs)?$")
         .expect("Invalid regex");
 
     if let Some(captures) = regex.captures(short) {
@@ -200,8 +200,14 @@ pub(crate) fn three_letter_protein_modification(short: &str) -> String {
             None => "",
         };
         let alt_capture = match captures.name("alt") {
-            Some(m) => m.as_str(),
-            None => "",
+            Some(m) => m
+                .as_str()
+                .chars()
+                .collect::<Vec<_>>()
+                .iter()
+                .map(|c| map_value(&c.to_string()))
+                .collect::<String>(),
+            None => String::new(),
         };
         return format!(
             "p.{}{}{}{}{}{}{}",
@@ -211,7 +217,7 @@ pub(crate) fn three_letter_protein_modification(short: &str) -> String {
             map_value(refb_capture),
             posb_capture,
             type_capture,
-            map_value(alt_capture)
+            alt_capture
         );
     }
 
@@ -433,7 +439,9 @@ mod tests {
     #[case("p.G123E", "p.Gly123Glu")]
     #[case("p.Y123=", "p.Tyr123=")]
     #[case("p.Y123fs", "p.Tyr123fs")]
-    #[case("p.S480_I482delinsF", "p.Ser480_Ile482delinsPhe")]
+    #[case("p.S123_I125delinsF", "p.Ser123_Ile125delinsPhe")]
+    #[case("p.S123_I125delinsFE", "p.Ser123_Ile125delinsPheGlu")]
+    #[case("p.S123_I125del", "p.Ser123_Ile125del")]
     // Examples from Onkostar Notices
     #[case("p.L858R", "p.Leu858Arg")]
     #[case("p.*del*", "p.*del*")]
