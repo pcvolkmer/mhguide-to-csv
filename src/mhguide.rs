@@ -113,7 +113,7 @@ impl Variant {
 
     #[allow(clippy::expect_used)]
     pub(crate) fn start(&self) -> String {
-        if let Some(chromosome_modification) = &self.transcript_hgvs_modified_object {
+        if let Some(chromosome_modification) = &self.chromosome_modification {
             match DnaChange::from_str(chromosome_modification) {
                 Ok(change) => change.start.to_string(),
                 Err(_) => String::new(),
@@ -125,7 +125,7 @@ impl Variant {
 
     #[allow(clippy::expect_used)]
     pub(crate) fn end(&self) -> String {
-        if let Some(chromosome_modification) = &self.transcript_hgvs_modified_object {
+        if let Some(chromosome_modification) = &self.chromosome_modification {
             match DnaChange::from_str(chromosome_modification) {
                 Ok(change) => match change.end {
                     Some(end) => end.to_string(),
@@ -226,8 +226,8 @@ pub(crate) fn three_letter_protein_modification(short: &str) -> String {
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct DnaChange {
-    start: i64,
-    end: Option<i64>,
+    start: i128,
+    end: Option<i128>,
 
     ref_allele: Option<String>,
     alt_allele: Option<String>,
@@ -251,10 +251,10 @@ impl FromStr for DnaChange {
 
         for regex in &regexes {
             if let Some(captures) = regex.captures(s) {
-                let start = captures["start"].parse::<i64>().unwrap_or_default();
+                let start = captures["start"].parse::<i128>().unwrap_or_default();
                 let end = captures
                     .name("end")
-                    .map_or(0, |m| m.as_str().parse::<i64>().unwrap_or_default());
+                    .map_or(0, |m| m.as_str().parse::<i128>().unwrap_or_default());
                 let ref_allele = captures.name("ref").map(|m| m.as_str().into());
                 let alt_allele = captures.name("alt").map(|m| m.as_str().into());
 
@@ -410,6 +410,9 @@ mod tests {
     )]
     #[case("c.123_124delinsCTGA",
         DnaChange{ start: 123, end: Some(124), ref_allele: None, alt_allele: Some("CTGA".to_string()) }
+    )]
+    #[case("g.41149933A>G",
+        DnaChange{ start: 41149933, end: None, ref_allele: Some("A".to_string()), alt_allele: Some("G".to_string()) }
     )]
     fn test_dna_change_parsing(#[case] case: &str, #[case] expected: DnaChange) {
         let actual = DnaChange::from_str(case);
