@@ -23,6 +23,8 @@ struct Csv {
     genomic_position: String,
     #[serde(rename = "cDNA Nomenklatur (c.)")]
     cdna: String,
+    #[serde(rename = "Proteinebene (original)")]
+    protein_orig: String,
     #[serde(rename = "Proteinebene Nomenklatur (p.)")]
     protein: String,
     #[serde(rename = "Chromosom")]
@@ -68,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 RefGenomeVersion::Hg19 => "HG19",
                 RefGenomeVersion::Hg38 => "HG38",
             }
-            .to_string(),
+                .to_string(),
             variantenart: if variant
                 .protein_modification
                 .clone()
@@ -80,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 "Einfache Variante (?)"
             }
-            .to_string(),
+                .to_string(),
             gene: variant.gene_symbol.clone().unwrap_or_default(),
             chromosome: variant.chromosome.clone().unwrap_or_default(),
             ensembl_id: genes
@@ -105,6 +107,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .transcript_hgvs_modified_object
                     .clone()
                     .unwrap_or_default()
+            } else {
+                String::new()
+            },
+            protein_orig: if variant
+                .protein_modification
+                .clone()
+                .unwrap_or_default()
+                .starts_with("p.")
+            {
+                variant.protein_modification.clone().unwrap_or_default()
             } else {
                 String::new()
             },
@@ -135,7 +147,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-            .to_string(),
+                .to_string(),
             start: variant.start(),
             end: variant.end(),
             ref_allele: variant.ref_allele(),
@@ -169,7 +181,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 },
                 _ => "",
             }
-            .to_string(),
+                .to_string(),
         })
         .collect::<Vec<_>>();
 
