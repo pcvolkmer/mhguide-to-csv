@@ -171,7 +171,7 @@ pub(crate) fn three_letter_protein_modification(short: &str) -> String {
         .to_string()
     }
 
-    let regex = Regex::new(r"^p\.(?<refA>[*FLSYCWPHQRIMTNKVADEG])?(?<posA>\d+)?(?<sep>_)?(?<refB>[*FLSYCWPHQRIMTNKVADEG])(?<posB>\d+)(?<type>del|ins|delins)?(?<alt>[*=FLSYCWPHQRIMTNKVADEG]+|fs)?$")
+    let regex = Regex::new(r"^p\.(?<refA>[*FLSYCWPHQRIMTNKVADEG])?(?<posA>\d+)?(?<sep>_)?(?<refB>[*FLSYCWPHQRIMTNKVADEG])(?<posB>\d+)(?<type>del|ins|delins|dup)?(?<alt>[*=FLSYCWPHQRIMTNKVADEG]+|fs)?$")
         .expect("Invalid regex");
 
     if let Some(captures) = regex.captures(short) {
@@ -242,6 +242,8 @@ impl FromStr for DnaChange {
             Regex::new(r"(?P<type>[cg])\.(?P<start>-?\d+)(?P<ref>[ACGT])>(?P<alt>[ACGT])$")
                 .expect("Invalid regex"),
             Regex::new(r"(?P<type>[cg])\.(?P<start>-?\d+)(?:_(?P<end>-?\d+))?del$")
+                .expect("Invalid regex"),
+            Regex::new(r"(?P<type>[cg])\.(?P<start>-?\d+)(?:_(?P<end>-?\d+))?dup$")
                 .expect("Invalid regex"),
             Regex::new(r"(?P<type>[cg])\.(?P<start>-?\d+)_-?(?P<end>-?\d+)ins(?P<alt>[ACGT]+)$")
                 .expect("Invalid regex"),
@@ -414,6 +416,9 @@ mod tests {
     #[case("g.41149933A>G",
         DnaChange{ start: 41149933, end: None, ref_allele: Some("A".to_string()), alt_allele: Some("G".to_string()) }
     )]
+    #[case("g.41149933_41150000dup",
+        DnaChange{ start: 41149933, end: Some(41150000), ref_allele: None, alt_allele: None }
+    )]
     fn test_dna_change_parsing(#[case] case: &str, #[case] expected: DnaChange) {
         let actual = DnaChange::from_str(case);
         assert_eq!(actual, Ok(expected));
@@ -445,6 +450,7 @@ mod tests {
     #[case("p.S123_I125delinsF", "p.Ser123_Ile125delinsPhe")]
     #[case("p.S123_I125delinsFE", "p.Ser123_Ile125delinsPheGlu")]
     #[case("p.S123_I125del", "p.Ser123_Ile125del")]
+    #[case("p.Y123dup", "p.Tyr123dup")]
     // Examples from Onkostar Notices
     #[case("p.L858R", "p.Leu858Arg")]
     #[case("p.*del*", "p.*del*")]
