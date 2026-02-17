@@ -1,0 +1,65 @@
+ifndef VERBOSE
+.SILENT:
+endif
+
+GITTAG = $(shell git describe --tag --abbrev=0 2>/dev/null | sed -En 's/v(.*)$$/\1/p')
+ifeq ($(findstring -, $(GITTAG)), -)
+    GITDEV = $(shell git describe --tag 2>/dev/null | sed -En 's/v(.*)-([0-9]+)-g([0-9a-f]+)$$/.dev.\2+\3/p')
+else
+    GITDEV = $(shell git describe --tag 2>/dev/null | sed -En 's/v(.*)-([0-9]+)-g([0-9a-f]+)$$/-dev.\2+\3/p')
+endif
+VERSION := "$(GITTAG)$(GITDEV)"
+
+NAME := mhguide-to-csv
+
+package-all: win-package linux-package
+
+.PHONY: version
+version:
+	echo $(VERSION)
+
+.PHONY: win-package
+win-package: win-binary-x86_64
+	mkdir $(NAME) || true
+	cp target/x86_64-pc-windows-gnu/release/$(NAME).exe $(NAME)/
+	cp LICENSE $(NAME)/
+	# first try (linux) zip command, then powershell sub command to create ZIP file
+	zip target/$(NAME)-$(VERSION)_win64.zip $(NAME)/* || powershell Compress-ARCHIVE $(NAME) target\$(NAME)-$(VERSION)_win64.zip
+	rm -rf $(NAME) || true
+
+.PHONY: linux-package
+linux-package: linux-binary-x86_64
+	mkdir $(NAME) || true
+	cp target/x86_64-unknown-linux-gnu/release/$(NAME) $(NAME)/
+	cp LICENSE $(NAME)/
+	tar -czvf target/$(NAME)-$(VERSION)_linux.tar.gz $(NAME)/
+	rm -rf $(NAME) || true
+
+.PHONY: linux-deb
+linux-deb: linux-binary-x86_64
+	cargo deb --no-build --strip --target=x86_64-unknown-linux-gnu --output=./target
+
+.PHONY: linux-rpm
+linux-rpm: linux-binary-x86_64
+	cargo generate-rpm --target=x86_64-unknown-linux-gnu --output=./target
+
+binary-all: win-binary-x86_64 linux-binary-x86_64
+
+.PHONY: win-binary-x86_64
+win-binary-x86_64:
+	cargo build --release --target=x86_64-pc-windows-gnu
+
+.PHONY: linux-binary-x86_64
+linux-binary-x86_64:
+	cargo build --release --target=x86_64-unknown-linux-gnu
+
+.PHONY: install
+install:
+	cargo install --path .
+
+.PHONY: clean
+clean:
+	cargo clean
+	rm -rf osc-variant 2>/dev/null || true
+	rm *_win64.zip 2>/dev/null || true
+	rm *_linux.tar.gz 2>/dev/null || true
