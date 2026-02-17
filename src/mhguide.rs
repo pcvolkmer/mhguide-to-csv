@@ -13,18 +13,22 @@ pub(crate) struct MhGuide {
 }
 
 impl MhGuide {
-
     pub(crate) fn all_variants(&self) -> Vec<&Variant> {
         self.variants.par_iter().collect()
     }
 
     pub(crate) fn oncogenic_variants(&self) -> Vec<&Variant> {
-        self.variants.par_iter().filter(|v| match v.oncogenic_classification_name {
-            Some(ref name) => name.eq_ignore_ascii_case("likely oncogenic"),
-            _ => false,
-        }).collect()
+        self.variants
+            .par_iter()
+            .filter(|v| match v.oncogenic_classification_name {
+                Some(ref name) => {
+                    name.to_ascii_lowercase().contains("oncogenic")
+                        || name.to_ascii_lowercase().contains("benign")
+                }
+                _ => false,
+            })
+            .collect()
     }
-
 }
 
 #[derive(Debug, PartialEq)]
