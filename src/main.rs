@@ -60,14 +60,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let genes = Genes::new();
 
-    let records = mhguide
-        .variants
-        .par_iter()
-        .filter(|variant| variant.gene_symbol.is_some())
-        .map(|variant| {
-            let gene = genes
-                .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
-                .unwrap_or_default();
+    let records = if cli.all_variants {
+        mhguide.all_variants()
+    } else {
+        mhguide.oncogenic_variants()
+    }
+    .par_iter()
+    .filter(|variant| variant.gene_symbol.is_some())
+    .map(|variant| {
+        let gene = genes
+            .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
+            .unwrap_or_default();
 
         let dna_change = variant.dna_change();
 
