@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.2.0...v0.2.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* include all benign oncogenic classification variants ([#4](https://github.com/pcvolkmer/mhguide-to-csv/issues/4)) ([88b0199](https://github.com/pcvolkmer/mhguide-to-csv/commit/88b0199b7eba89938d8529fc62035a8b2fee7f5b))
+
 ## [0.2.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.1.0...v0.2.0) (2026-02-17)
 
 
