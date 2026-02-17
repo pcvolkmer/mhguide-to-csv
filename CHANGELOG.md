@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.1.0...v0.2.0) (2026-02-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* filter required variants based on oncogenic classification ([#2](https://github.com/pcvolkmer/mhguide-to-csv/issues/2))
+
+### Features
+
+* filter required variants based on oncogenic classification ([#2](https://github.com/pcvolkmer/mhguide-to-csv/issues/2)) ([2f0866e](https://github.com/pcvolkmer/mhguide-to-csv/commit/2f0866ee056e00be12508892ec87ba8ad1d8cc50))
+
 ## [0.1.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.1.0...v0.1.0) (2026-02-17)
 
 
