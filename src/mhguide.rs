@@ -87,55 +87,13 @@ pub(crate) struct Variant {
 }
 
 impl Variant {
-    #[allow(clippy::expect_used)]
-    pub(crate) fn ref_allele(&self) -> String {
-        if let Some(chromosome_modification) = &self.chromosome_modification {
-            match DnaChange::from_str(chromosome_modification) {
-                Ok(change) => change.ref_allele.unwrap_or_default(),
-                Err(_) => String::new(),
-            }
-        } else {
-            String::new()
-        }
-    }
-
-    #[allow(clippy::expect_used)]
-    pub(crate) fn alt_allele(&self) -> String {
-        if let Some(chromosome_modification) = &self.chromosome_modification {
-            match DnaChange::from_str(chromosome_modification) {
-                Ok(change) => change.alt_allele.unwrap_or_default(),
-                Err(_) => String::new(),
-            }
-        } else {
-            String::new()
-        }
-    }
-
-    #[allow(clippy::expect_used)]
-    pub(crate) fn start(&self) -> String {
-        if let Some(chromosome_modification) = &self.chromosome_modification {
-            match DnaChange::from_str(chromosome_modification) {
-                Ok(change) => change.start.to_string(),
-                Err(_) => String::new(),
-            }
-        } else {
-            String::new()
-        }
-    }
-
-    #[allow(clippy::expect_used)]
-    pub(crate) fn end(&self) -> String {
-        if let Some(chromosome_modification) = &self.chromosome_modification {
-            match DnaChange::from_str(chromosome_modification) {
-                Ok(change) => match change.end {
-                    Some(end) => end.to_string(),
-                    _ => String::new(),
-                },
-                Err(_) => String::new(),
-            }
-        } else {
-            String::new()
-        }
+    pub(crate) fn dna_change(&self) -> DnaChange {
+        DnaChange::from_str(
+            self.chromosome_modification
+                .as_ref()
+                .unwrap_or(&String::new()),
+        )
+        .unwrap_or_default()
     }
 }
 
@@ -224,13 +182,13 @@ pub(crate) fn three_letter_protein_modification(short: &str) -> String {
     short.to_string()
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub(crate) struct DnaChange {
-    start: i128,
-    end: Option<i128>,
+    pub(crate) start: String,
+    pub(crate) end: String,
 
-    ref_allele: Option<String>,
-    alt_allele: Option<String>,
+    pub(crate) ref_allele: String,
+    pub(crate) alt_allele: String,
 }
 
 impl FromStr for DnaChange {
@@ -257,10 +215,25 @@ impl FromStr for DnaChange {
                 let end = captures
                     .name("end")
                     .map_or(0, |m| m.as_str().parse::<i128>().unwrap_or_default());
-                let ref_allele = captures.name("ref").map(|m| m.as_str().into());
-                let alt_allele = captures.name("alt").map(|m| m.as_str().into());
+                let ref_allele = captures
+                    .name("ref")
+                    .map(|m| m.as_str().into())
+                    .unwrap_or_default();
+                let alt_allele = captures
+                    .name("alt")
+                    .map(|m| m.as_str().into())
+                    .unwrap_or_default();
 
-                let end = if end == 0 { None } else { Some(end) };
+                let start = if start == 0 {
+                    String::new()
+                } else {
+                    start.to_string()
+                };
+                let end = if end == 0 {
+                    String::new()
+                } else {
+                    end.to_string()
+                };
                 return Ok(DnaChange {
                     start,
                     end,
@@ -381,7 +354,10 @@ mod tests {
 
         let mhguide = serde_json::from_str::<MhGuide>(SV_MHGUIDE).unwrap();
         assert_eq!(mhguide.variants.len(), 1);
-        assert_eq!(mhguide.variants.first().unwrap().ref_allele(), "G");
+        assert_eq!(
+            mhguide.variants.first().unwrap().dna_change().ref_allele,
+            "G"
+        );
     }
 
     #[test]
@@ -391,33 +367,36 @@ mod tests {
 
         let mhguide = serde_json::from_str::<MhGuide>(SV_MHGUIDE).unwrap();
         assert_eq!(mhguide.variants.len(), 1);
-        assert_eq!(mhguide.variants.first().unwrap().alt_allele(), "A");
+        assert_eq!(
+            mhguide.variants.first().unwrap().dna_change().alt_allele,
+            "A"
+        );
     }
 
     #[rstest]
     #[case("c.123C>T",
-        DnaChange{ start: 123, end: None, ref_allele: Some("C".to_string()), alt_allele: Some("T".to_string()) }
+        DnaChange{ start: "123".to_string(), end: String::new(), ref_allele: "C".to_string(), alt_allele: "T".to_string() }
     )]
     #[case("c.-123C>T",
-        DnaChange{ start: -123, end: None, ref_allele: Some("C".to_string()), alt_allele: Some("T".to_string()) }
+        DnaChange{ start: "-123".to_string(), end: String::new(), ref_allele: "C".to_string(), alt_allele: "T".to_string() }
     )]
     #[case("c.123_124insA",
-        DnaChange{ start: 123, end: Some(124), ref_allele: None, alt_allele: Some("A".to_string()) }
+        DnaChange{ start: "123".to_string(), end: "124".to_string(), ref_allele: String::new(), alt_allele: "A".to_string() }
     )]
     #[case("c.123_124del",
-        DnaChange{ start: 123, end: Some(124), ref_allele: None, alt_allele: None }
+        DnaChange{ start: "123".to_string(), end: "124".to_string(), ref_allele: String::new(), alt_allele: String::new() }
     )]
     #[case("c.-123_123del",
-        DnaChange{ start: -123, end: Some(123), ref_allele: None, alt_allele: None }
+        DnaChange{ start: "-123".to_string(), end: "123".to_string(), ref_allele: String::new(), alt_allele: String::new() }
     )]
     #[case("c.123_124delinsCTGA",
-        DnaChange{ start: 123, end: Some(124), ref_allele: None, alt_allele: Some("CTGA".to_string()) }
+        DnaChange{ start: "123".to_string(), end: "124".to_string(), ref_allele: String::new(), alt_allele: "CTGA".to_string() }
     )]
     #[case("g.41149933A>G",
-        DnaChange{ start: 41149933, end: None, ref_allele: Some("A".to_string()), alt_allele: Some("G".to_string()) }
+        DnaChange{ start: "41149933".to_string(), end: String::new(), ref_allele: "A".to_string(), alt_allele: "G".to_string() }
     )]
     #[case("g.41149933_41150000dup",
-        DnaChange{ start: 41149933, end: Some(41150000), ref_allele: None, alt_allele: None }
+        DnaChange{ start: "41149933".to_string(), end: "41150000".to_string(), ref_allele: String::new(), alt_allele: String::new() }
     )]
     fn test_dna_change_parsing(#[case] case: &str, #[case] expected: DnaChange) {
         let actual = DnaChange::from_str(case);

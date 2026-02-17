@@ -64,13 +64,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .variants
         .par_iter()
         .filter(|variant| variant.gene_symbol.is_some())
-        .map(|variant| Csv {
+        .map(|variant| {
+            let gene = genes
+                .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
+                .unwrap_or_default();
+
+        let dna_change = variant.dna_change();
+
+        Csv {
             h_nummer: mhguide.general.patient_identifier.h_number.clone(),
             ref_genome: match &mhguide.general.ref_genome_version {
                 RefGenomeVersion::Hg19 => "HG19",
                 RefGenomeVersion::Hg38 => "HG38",
             }
-                .to_string(),
+            .to_string(),
             variantenart: if variant
                 .protein_modification
                 .clone()
@@ -82,21 +89,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 "Einfache Variante (?)"
             }
-                .to_string(),
+            .to_string(),
             gene: variant.gene_symbol.clone().unwrap_or_default(),
             chromosome: variant.chromosome.clone().unwrap_or_default(),
-            ensembl_id: genes
-                .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
-                .map(|gene| gene.ensembl_id)
-                .unwrap_or_default().unwrap_or_default(),
-            hgnc_id: genes
-                .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
-                .map(|gene| gene.hgnc_id)
-                .unwrap_or_default(),
-            hgnc_name: genes
-                .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
-                .map(|gene| gene.name)
-                .unwrap_or_default(),
+            ensembl_id: gene.ensembl_id.unwrap_or_default(),
+            hgnc_id: gene.hgnc_id,
+            hgnc_name: gene.name,
             cdna: if variant
                 .transcript_hgvs_modified_object
                 .clone()
@@ -147,11 +145,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-                .to_string(),
-            start: variant.start(),
-            end: variant.end(),
-            ref_allele: variant.ref_allele(),
-            alt_allele: variant.alt_allele(),
+            .to_string(),
+            start: dna_change.start,
+            end: dna_change.end,
+            ref_allele: dna_change.ref_allele,
+            alt_allele: dna_change.alt_allele,
             allelic_frequency: match variant.variant_allele_frequency_in_tumor {
                 Some(value) => format!("{value:.2}"),
                 None => String::new(),
@@ -181,9 +179,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 },
                 _ => "",
             }
-                .to_string(),
-        })
-        .collect::<Vec<_>>();
+            .to_string(),
+        }
+    })
+    .collect::<Vec<_>>();
 
     let mut writer = csv::WriterBuilder::new()
         .has_headers(true)

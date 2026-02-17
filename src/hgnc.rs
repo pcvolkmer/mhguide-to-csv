@@ -1,7 +1,7 @@
 use csv::ReaderBuilder;
 use serde::Deserialize;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 pub(crate) struct Gene {
     #[serde(rename = "HGNC ID")]
     pub(crate) hgnc_id: String,
