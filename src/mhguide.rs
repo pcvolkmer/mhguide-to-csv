@@ -2,12 +2,29 @@ use regex::Regex;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
 
+use rayon::prelude::*;
+
 #[derive(Debug, Deserialize, PartialEq)]
 pub(crate) struct MhGuide {
     #[serde(rename = "GENERAL")]
     pub(crate) general: General,
     #[serde(rename = "VARIANT_LONG_LIST")]
-    pub(crate) variants: Vec<Variant>,
+    variants: Vec<Variant>,
+}
+
+impl MhGuide {
+
+    pub(crate) fn all_variants(&self) -> Vec<&Variant> {
+        self.variants.par_iter().collect()
+    }
+
+    pub(crate) fn oncogenic_variants(&self) -> Vec<&Variant> {
+        self.variants.par_iter().filter(|v| match v.oncogenic_classification_name {
+            Some(ref name) => name.eq_ignore_ascii_case("likely oncogenic"),
+            _ => false,
+        }).collect()
+    }
+
 }
 
 #[derive(Debug, PartialEq)]
@@ -84,6 +101,8 @@ pub(crate) struct Variant {
     pub(crate) db_snp: Option<String>,
     #[serde(rename = "COPY_NUMBER")]
     pub(crate) copy_number: Option<f32>,
+    #[serde(rename = "ONCOGENIC_CLASSIFICATION_NAME")]
+    oncogenic_classification_name: Option<String>,
 }
 
 impl Variant {
@@ -277,7 +296,8 @@ mod tests {
                     transcript_hgvs_modified_object: Some("c.123C>T".to_string()),
                     variant_allele_frequency_in_tumor: Some(42.42),
                     db_snp: Some("rs202602111".to_string()),
-                    copy_number: None
+                    copy_number: None,
+                    oncogenic_classification_name: None
                 }]
             }
         );
@@ -309,7 +329,8 @@ mod tests {
                     transcript_hgvs_modified_object: Some("c.120-1_128_1del".to_string()),
                     variant_allele_frequency_in_tumor: Some(42.42),
                     db_snp: Some("rs202602111".to_string()),
-                    copy_number: None
+                    copy_number: None,
+                    oncogenic_classification_name: None
                 }]
             }
         );
@@ -341,7 +362,8 @@ mod tests {
                     transcript_hgvs_modified_object: None,
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
-                    copy_number: Some(12.34)
+                    copy_number: Some(12.34),
+                    oncogenic_classification_name: None
                 }]
             }
         );
