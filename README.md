@@ -8,7 +8,7 @@ verwenden.
 Diese Anwendung erzeugt aus einer MHGuide JSON Datei eine CSV Datei.
 Dabei wird der Dateiname beibehalten, die Dateiendung jedoch durch `.csv` ersetzt.
 
-Übernommen werden alle Varianten, die als 'Likely oncogenic' markiert sind.
+Übernommen werden alle Varianten, die als '(Likely) oncogenic' oder '(Likely) benign' markiert sind.
 
 ```
 Usage: mhguide-to-csv [OPTIONS] <INPUT_FILE>
@@ -17,7 +17,7 @@ Arguments:
   <INPUT_FILE>  Zu lesende JSON-Datei
 
 Options:
-      --all-variants  Alle Varianten verwenden, nicht nur 'Likely oncogenic'
+      --all-variants  Alle Varianten verwenden, nicht nur '(Likely) oncogenic' oder '(Likely) benign'
   -h, --help          Print help
   -V, --version       Print version
 ```
