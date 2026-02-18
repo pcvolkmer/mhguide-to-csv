@@ -17,7 +17,7 @@ impl MhGuide {
         self.variants.par_iter().collect()
     }
 
-    pub(crate) fn oncogenic_variants(&self) -> Vec<&Variant> {
+    pub(crate) fn relevant_variants(&self) -> Vec<&Variant> {
         self.variants
             .par_iter()
             .filter(|v| match v.oncogenic_classification_name {

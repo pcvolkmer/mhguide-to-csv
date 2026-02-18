@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let records = if cli.all_variants {
         mhguide.all_variants()
     } else {
-        mhguide.oncogenic_variants()
+        mhguide.relevant_variants()
     }
     .par_iter()
     .filter(|variant| variant.gene_symbol.is_some())
