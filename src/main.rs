@@ -70,11 +70,7 @@ impl Csv {
 
         Csv {
             h_nummer: h_number.to_string(),
-            ref_genome: match ref_genome_version {
-                RefGenomeVersion::Hg19 => "HG19",
-                RefGenomeVersion::Hg38 => "HG38",
-            }
-            .to_string(),
+            ref_genome: ref_genome_version.to_string(),
             variantenart: if variant
                 .protein_modification
                 .clone()

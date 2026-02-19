@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use regex::Regex;
 use serde::{Deserialize, Deserializer};
 use std::str::FromStr;
@@ -59,6 +60,15 @@ impl<'de> Deserialize<'de> for RefGenomeVersion {
             _ => Err(serde::de::Error::custom(format!(
                 "Invalid RefGenomeVersion: {value}"
             ))),
+        }
+    }
+}
+
+impl Display for RefGenomeVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RefGenomeVersion::Hg19 => write!(f, "HG19"),
+            RefGenomeVersion::Hg38 => write!(f, "HG38"),
         }
     }
 }
