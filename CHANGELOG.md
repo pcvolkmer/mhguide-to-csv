@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.2.1...v0.2.2) (2026-02-19)
+
+
+### Features
+
+* add arg to use oncogenic classification variants only ([a4dd8df](https://github.com/pcvolkmer/mhguide-to-csv/commit/a4dd8df2b453ba10edf24f9c3099b1d019df834b))
+
 ## [0.2.1](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.2.0...v0.2.1) (2026-02-17)
 
 
