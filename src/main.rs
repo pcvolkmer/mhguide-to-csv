@@ -4,10 +4,13 @@ use clap::Parser;
 use rayon::prelude::*;
 use serde::Serialize;
 use std::fs;
+use std::sync::LazyLock;
 
 mod cli;
 mod hgnc;
 mod mhguide;
+
+static GENES: LazyLock<Genes> = LazyLock::new(Genes::new);
 
 #[derive(Debug, Serialize)]
 struct Csv {
@@ -53,32 +56,21 @@ struct Csv {
     total_copy_number: String,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cli = cli::Cli::parse();
-    let json = std::fs::read_to_string(cli.input_file.clone())?;
-    let mhguide = serde_json::from_str::<mhguide::MhGuide>(&json)?;
-
-    let genes = Genes::new();
-
-    let records = if cli.all_variants {
-        mhguide.all_variants()
-    } else if cli.oncogenic {
-        mhguide.oncogenic_variants()
-    } else {
-        mhguide.relevant_variants()
-    }
-    .par_iter()
-    .filter(|variant| variant.gene_symbol.is_some())
-    .map(|variant| {
-        let gene = genes
+impl Csv {
+    fn from_variant(
+        h_number: &str,
+        ref_genome_version: &RefGenomeVersion,
+        variant: &mhguide::Variant,
+    ) -> Csv {
+        let gene = GENES
             .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
             .unwrap_or_default();
 
         let dna_change = variant.dna_change();
 
         Csv {
-            h_nummer: mhguide.general.patient_identifier.h_number.clone(),
-            ref_genome: match &mhguide.general.ref_genome_version {
+            h_nummer: h_number.to_string(),
+            ref_genome: match ref_genome_version {
                 RefGenomeVersion::Hg19 => "HG19",
                 RefGenomeVersion::Hg38 => "HG38",
             }
@@ -186,6 +178,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             .to_string(),
         }
+    }
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = cli::Cli::parse();
+    let json = std::fs::read_to_string(cli.input_file.clone())?;
+    let mhguide = serde_json::from_str::<mhguide::MhGuide>(&json)?;
+
+    let records = if cli.all_variants {
+        mhguide.all_variants()
+    } else if cli.oncogenic {
+        mhguide.oncogenic_variants()
+    } else {
+        mhguide.relevant_variants()
+    }
+    .par_iter()
+    .filter(|variant| variant.gene_symbol.is_some())
+    .map(|variant| {
+        Csv::from_variant(
+            &mhguide.general.patient_identifier.h_number,
+            &mhguide.general.ref_genome_version,
+            variant,
+        )
     })
     .collect::<Vec<_>>();
 
