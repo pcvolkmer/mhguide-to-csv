@@ -18,11 +18,13 @@ Arguments:
 
 Options:
       --all-variants  Alle Varianten verwenden, nicht nur '(Likely) oncogenic' oder '(Likely) benign'
+      --oncogenic     Nur Varianten mit '(Likely) oncogenic' verwenden, nicht '(Likely) benign'
   -h, --help          Print help
   -V, --version       Print version
 ```
 
 Sollen alle Varianten verwendet werden, dann kann dies mit `--all-variants` angegeben werden.
+Um nur Varianten mit '(Likely) oncogenic' zu verwenden, dann kann dies mit `--oncogenic` angegeben werden.
 
 ## Enthaltene Liste mit Genen
 

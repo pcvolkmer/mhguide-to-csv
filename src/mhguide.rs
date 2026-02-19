@@ -29,6 +29,16 @@ impl MhGuide {
             })
             .collect()
     }
+
+    pub(crate) fn oncogenic_variants(&self) -> Vec<&Variant> {
+        self.variants
+            .par_iter()
+            .filter(|v| match v.oncogenic_classification_name {
+                Some(ref name) => name.to_ascii_lowercase().contains("oncogenic"),
+                _ => false,
+            })
+            .collect()
+    }
 }
 
 #[derive(Debug, PartialEq)]

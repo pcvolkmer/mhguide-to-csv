@@ -62,6 +62,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let records = if cli.all_variants {
         mhguide.all_variants()
+    } else if cli.oncogenic {
+        mhguide.oncogenic_variants()
     } else {
         mhguide.relevant_variants()
     }
