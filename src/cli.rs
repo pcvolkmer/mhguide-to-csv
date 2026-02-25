@@ -11,14 +11,14 @@ pub(crate) struct Cli {
     #[arg(
         long,
         conflicts_with = "oncogenic",
-        help = "Alle Varianten verwenden, nicht nur '(Likely) oncogenic' oder '(Likely) benign'"
+        help = "Alle Varianten verwenden, nicht nur '(Likely) oncogenic' oder aus 'REPORT_NARRATIVE'"
     )]
     pub(crate) all_variants: bool,
 
     #[arg(
         long,
         conflicts_with = "all_variants",
-        help = "Nur Varianten mit '(Likely) oncogenic' verwenden, nicht '(Likely) benign'"
+        help = "Nur Varianten mit '(Likely) oncogenic' verwenden, keine aus 'REPORT_NARRATIVE'"
     )]
     pub(crate) oncogenic: bool,
 }
