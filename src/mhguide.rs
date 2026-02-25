@@ -75,8 +75,7 @@ impl MhGuide {
     #[allow(clippy::expect_used)]
     fn report_narrative_variants(&self) -> Vec<(String, String)> {
         fn collect(s: &str, re: &Regex) -> Vec<(String, String)> {
-            re
-                .find_iter(s)
+            re.find_iter(s)
                 .filter_map(|m| {
                     let parts = m.as_str().split(' ').collect::<Vec<_>>();
                     if parts.len() == 2 {
@@ -89,13 +88,13 @@ impl MhGuide {
         }
 
         let protein_regex = Regex::new(
-            r"[A-Z0-9]+\s+p\.[*FLSYCWPHQRIMTNKVADEG]?(\d+)?_?[*FLSYCWPHQRIMTNKVADEG]\d+(del|ins|delins|dup)?([*=FLSYCWPHQRIMTNKVADEG]+|fs)?"
+            r"[A-Z0-9\\-]+\s+p\.[*FLSYCWPHQRIMTNKVADEG]?(\d+)?_?[*FLSYCWPHQRIMTNKVADEG]\d+(del|ins|delins|dup)?([*=FLSYCWPHQRIMTNKVADEG]+|fs)?"
         )
         .expect("Invalid regex");
         let mut result = collect(&self.report_narrative, &protein_regex);
 
         let cdna_regex = Regex::new(
-            r"[A-Z0-9]+\s+c\.(-?\d+)(?:_(-?\d+))?([ACGT]>|dup|del|ins|delins)([ACGT]+)?",
+            r"[A-Z0-9\\-]+\s+c\.(-?\d+)(?:_(-?\d+))?([ACGT]>|dup|del|ins|delins)([ACGT]+)?",
         )
         .expect("Invalid regex");
         let cdna_result = collect(&self.report_narrative, &cdna_regex);
@@ -679,6 +678,41 @@ mod tests {
                     copy_number: Some(12.34),
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
+            ],
+            report_narrative: report_narrative.to_string(),
+        };
+
+        let actual = mh_guide.relevant_variants();
+
+        assert_eq!(actual.len(), expected_variants);
+    }
+
+    #[rstest]
+    #[case("A1BG-AS1 p.K1234F should be allowed, too", 1)]
+    #[case("A1BG-AS1 c.123T>C should be allowed, too", 1)]
+    fn test_allow_hyphen_in_symbol(#[case] report_narrative: &str, #[case] expected_variants: usize) {
+        let mh_guide = MhGuide {
+            general: General {
+                order_date: "2026-02-11".to_string(),
+                ref_genome_version: RefGenomeVersion::Hg19,
+                patient_identifier: PatientIdentifier {
+                    h_number: "H10000-26".to_string(),
+                    pid: "PID0123456".to_string(),
+                },
+            },
+            variants: vec![
+                Variant {
+                    gene_symbol: Some("A1BG-AS1".to_string()),
+                    protein_modification: Some("p.K1234F".to_string()),
+                    protein_variant_type: None,
+                    chromosome: Some("chr19".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(12.34),
+                    oncogenic_classification_name: Some("benign".to_string()),
+                }
             ],
             report_narrative: report_narrative.to_string(),
         };
