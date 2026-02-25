@@ -20,14 +20,7 @@ impl MhGuide {
     }
 
     pub(crate) fn relevant_variants(&self) -> Vec<&Variant> {
-        let mut result = self
-            .variants
-            .par_iter()
-            .filter(|v| match v.oncogenic_classification_name {
-                Some(ref name) => name.to_ascii_lowercase().contains("oncogenic"),
-                _ => false,
-            })
-            .collect::<Vec<_>>();
+        let mut result = self.oncogenic_variants();
 
         let report_narrative_variants = self.report_narrative_variants();
 
