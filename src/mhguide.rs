@@ -535,6 +535,7 @@ mod tests {
     #[case("", 1)]
     #[case("KMT2C p.K1234fs laut XYZ oncogenic", 2)]
     #[case("KMT2C p.K1234fs laut XYZ oncogenic; FANCA p.S1234F noch dazu", 3)]
+    #[case("KMT2C p.K1234fs laut XYZ oncogenic; FANCA p.S1234F noch dazu; BRAF p.K1234F soll nicht doppelt sein", 3)]
     fn test_should_add_report_narrative_matches(#[case] report_narrative: &str, #[case] expected_variants: usize) {
         let mh_guide = MhGuide {
             general: General {
@@ -548,7 +549,7 @@ mod tests {
             variants: vec![
                 Variant {
                     gene_symbol: Some("BRAF".to_string()),
-                    protein_modification: None,
+                    protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: None,
