@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.0...v0.3.1) (2026-02-25)
+
+
+### Features
+
+* add narrative report variants with cDNA modification ([#9](https://github.com/pcvolkmer/mhguide-to-csv/issues/9)) ([7adf573](https://github.com/pcvolkmer/mhguide-to-csv/commit/7adf5731b1d169ef4ba1f30f48bafa33b6191983))
+
 ## [0.3.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.2.2...v0.3.0) (2026-02-25)
 
 
