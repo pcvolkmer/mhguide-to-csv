@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.2.2...v0.3.0) (2026-02-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* include variants from `REPORT_NARRATIVE` ([#7](https://github.com/pcvolkmer/mhguide-to-csv/issues/7))
+
+### Features
+
+* include variants from `REPORT_NARRATIVE` ([#7](https://github.com/pcvolkmer/mhguide-to-csv/issues/7)) ([f0409c1](https://github.com/pcvolkmer/mhguide-to-csv/commit/f0409c1e3aaf669f635912cedf64dad99068a0e7))
+
 ## [0.2.2](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.2.1...v0.2.2) (2026-02-19)
 
 
