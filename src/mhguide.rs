@@ -88,13 +88,13 @@ impl MhGuide {
         }
 
         let protein_regex = Regex::new(
-            r"[A-Z0-9\\-]+\s+p\.[*FLSYCWPHQRIMTNKVADEG]?(\d+)?_?[*FLSYCWPHQRIMTNKVADEG]\d+(del|ins|delins|dup)?([*=FLSYCWPHQRIMTNKVADEG]+|fs)?"
+            r"[A-Z0-9_\\-]+\s+p\.[*FLSYCWPHQRIMTNKVADEG]?(\d+)?_?[*FLSYCWPHQRIMTNKVADEG]\d+(del|ins|delins|dup)?([*=FLSYCWPHQRIMTNKVADEG]+|fs)?"
         )
         .expect("Invalid regex");
         let mut result = collect(&self.report_narrative, &protein_regex);
 
         let cdna_regex = Regex::new(
-            r"[A-Z0-9\\-]+\s+c\.(-?\d+)(?:_(-?\d+))?([ACGT]>|dup|del|ins|delins)([ACGT]+)?",
+            r"[A-Z0-9_\\-]+\s+c\.(-?\d+)(?:_(-?\d+))?([ACGT]>|dup|del|ins|delins)([ACGT]+)?",
         )
         .expect("Invalid regex");
         let cdna_result = collect(&self.report_narrative, &cdna_regex);
@@ -690,7 +690,12 @@ mod tests {
     #[rstest]
     #[case("A1BG-AS1 p.K1234F should be allowed, too", 1)]
     #[case("A1BG-AS1 c.123T>C should be allowed, too", 1)]
-    fn test_allow_hyphen_in_symbol(#[case] report_narrative: &str, #[case] expected_variants: usize) {
+    #[case("APOBEC3A_B p.K1234F should be allowed, too", 1)]
+    #[case("APOBEC3A_B c.123T>C should be allowed, too", 1)]
+    fn test_allow_hyphen_underscore_in_symbol(
+        #[case] report_narrative: &str,
+        #[case] expected_variants: usize,
+    ) {
         let mh_guide = MhGuide {
             general: General {
                 order_date: "2026-02-11".to_string(),
@@ -712,7 +717,19 @@ mod tests {
                     db_snp: None,
                     copy_number: Some(12.34),
                     oncogenic_classification_name: Some("benign".to_string()),
-                }
+                },
+                Variant {
+                    gene_symbol: Some("APOBEC3A_B".to_string()),
+                    protein_modification: Some("p.K1234F".to_string()),
+                    protein_variant_type: None,
+                    chromosome: Some("chr22".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(12.34),
+                    oncogenic_classification_name: Some("benign".to_string()),
+                },
             ],
             report_narrative: report_narrative.to_string(),
         };
