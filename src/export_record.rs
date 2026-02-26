@@ -1,12 +1,12 @@
 use crate::hgnc::Genes;
 use crate::mhguide;
 use crate::mhguide::{RefGenomeVersion, three_letter_protein_modification};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
 static GENES: LazyLock<Genes> = LazyLock::new(Genes::new);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Record {
     #[serde(rename = "H-Nummer")]
     h_nummer: String,
