@@ -1,16 +1,16 @@
+use crate::export_record::Record;
 use clap::Parser;
 use rayon::prelude::*;
 use std::fs;
-use crate::export_record::Record;
 
 mod cli;
+mod export_record;
 mod hgnc;
 mod mhguide;
-mod export_record;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = cli::Cli::parse();
-    let json = std::fs::read_to_string(cli.input_file.clone())?;
+    let json = fs::read_to_string(cli.input_file.clone())?;
     let mhguide = serde_json::from_str::<mhguide::MhGuide>(&json)?;
 
     let records = if cli.all_variants {

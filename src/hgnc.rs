@@ -65,6 +65,5 @@ mod tests {
         assert_eq!(gene.hgnc_id, "HGNC:1100");
         assert_eq!(gene.name, "BRCA1 DNA repair associated");
         assert_eq!(gene.ensembl_id, Some("ENSG00000012048".to_string()));
-
     }
 }

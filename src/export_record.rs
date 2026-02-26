@@ -1,8 +1,8 @@
-use std::sync::LazyLock;
-use serde::Serialize;
 use crate::hgnc::Genes;
 use crate::mhguide;
-use crate::mhguide::{three_letter_protein_modification, RefGenomeVersion};
+use crate::mhguide::{RefGenomeVersion, three_letter_protein_modification};
+use serde::Serialize;
+use std::sync::LazyLock;
 
 static GENES: LazyLock<Genes> = LazyLock::new(Genes::new);
 
@@ -76,7 +76,7 @@ impl Record {
             } else {
                 "Einfache Variante (?)"
             }
-                .to_string(),
+            .to_string(),
             gene: variant.gene_symbol.clone().unwrap_or_default(),
             chromosome: variant.chromosome.clone().unwrap_or_default(),
             ensembl_id: gene.ensembl_id.unwrap_or_default(),
@@ -132,7 +132,7 @@ impl Record {
                     }
                 }
             }
-                .to_string(),
+            .to_string(),
             start: dna_change.start,
             end: dna_change.end,
             ref_allele: dna_change.ref_allele,
@@ -166,7 +166,7 @@ impl Record {
                 },
                 _ => "",
             }
-                .to_string(),
+            .to_string(),
         }
     }
 }
