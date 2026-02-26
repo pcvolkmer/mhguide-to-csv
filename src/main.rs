@@ -3,6 +3,8 @@ use clap::Parser;
 use rayon::prelude::*;
 use rust_xlsxwriter::{Format, Workbook};
 use std::fs;
+use std::io::Read;
+use std::path::PathBuf;
 
 mod cli;
 mod export_record;
@@ -11,7 +13,7 @@ mod mhguide;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = cli::Cli::parse();
-    let json = fs::read_to_string(cli.input_file.clone())?;
+    let json = read_json_content(&cli.input_file)?;
     let mhguide = serde_json::from_str::<mhguide::MhGuide>(&json)?;
 
     let records = if cli.all_variants {
@@ -65,4 +67,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::write(output_file, writer.into_inner()?)?;
 
     Ok(())
+}
+
+fn read_json_content(path: &PathBuf) -> Result<String, Box<dyn std::error::Error>> {
+    match path.extension() {
+        Some(ext) if ext == "json" => Ok(fs::read_to_string(path)?),
+        Some(ext) if ext == "zip" => {
+            let mut archive = zip::ZipArchive::new(fs::File::open(path)?)?;
+            let mut file = archive.by_index(0)?;
+            let mut result = String::new();
+            file.read_to_string(&mut result)?;
+            Ok(result)
+        }
+        _ => Err(
+            "Unsupported file format. Only JSON files and ZIP compressed JSON files are supported."
+                .into(),
+        ),
+    }
 }
