@@ -188,6 +188,8 @@ pub(crate) struct Variant {
     pub(crate) db_snp: Option<String>,
     #[serde(rename = "COPY_NUMBER")]
     pub(crate) copy_number: Option<f32>,
+    #[serde(rename = "CLASSIFICATION_NAME")]
+    pub(crate) classification_name: Option<String>,
     #[serde(rename = "ONCOGENIC_CLASSIFICATION_NAME")]
     oncogenic_classification_name: Option<String>,
 }
@@ -384,6 +386,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: Some(42.42),
                     db_snp: Some("rs202602111".to_string()),
                     copy_number: None,
+                    classification_name: Some("Likely benign".to_string()),
                     oncogenic_classification_name: None
                 }],
                 report_narrative: String::new()
@@ -418,6 +421,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: Some(42.42),
                     db_snp: Some("rs202602111".to_string()),
                     copy_number: None,
+                    classification_name: Some("Likely benign".to_string()),
                     oncogenic_classification_name: None
                 }],
                 report_narrative: String::new()
@@ -452,6 +456,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: None
                 }],
                 report_narrative: String::new()
@@ -585,6 +590,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: Some("oncogenic".to_string()),
                 },
                 Variant {
@@ -597,6 +603,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
                 Variant {
@@ -609,6 +616,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
             ],
@@ -652,6 +660,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: Some("oncogenic".to_string()),
                 },
                 Variant {
@@ -664,6 +673,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
                 Variant {
@@ -676,6 +686,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
             ],
@@ -716,6 +727,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
                 Variant {
@@ -728,6 +740,7 @@ mod tests {
                     variant_allele_frequency_in_tumor: None,
                     db_snp: None,
                     copy_number: Some(12.34),
+                    classification_name: None,
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
             ],
