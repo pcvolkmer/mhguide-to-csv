@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.2...v0.3.3) (2026-02-26)
+
+
+### Features
+
+* accept ZIP files ([#16](https://github.com/pcvolkmer/mhguide-to-csv/issues/16)) ([7f6fb68](https://github.com/pcvolkmer/mhguide-to-csv/commit/7f6fb68225469eee845a17b448f98eb1f2292232))
+* export into Excel file ([#14](https://github.com/pcvolkmer/mhguide-to-csv/issues/14)) ([00b68e9](https://github.com/pcvolkmer/mhguide-to-csv/commit/00b68e91777e3a7451b91b70bb804eb0086c5865))
+
 ## [0.3.2](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.1...v0.3.2) (2026-02-26)
 
 
