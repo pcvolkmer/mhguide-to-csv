@@ -56,9 +56,12 @@ impl Record {
         ref_genome_version: &RefGenomeVersion,
         variant: &mhguide::Variant,
     ) -> Record {
-        let gene = GENES
-            .find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default())
-            .unwrap_or_default();
+        let gene = match GENES.find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default()) {
+            Some(gene) => gene,
+            None => GENES
+                .find_by_previous_symbol(&variant.gene_symbol.clone().unwrap_or_default())
+                .unwrap_or_default(),
+        };
 
         let dna_change = variant.dna_change();
 

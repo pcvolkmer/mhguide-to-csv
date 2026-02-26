@@ -7,6 +7,8 @@ pub(crate) struct Gene {
     pub(crate) hgnc_id: String,
     #[serde(rename = "Approved symbol")]
     pub(crate) symbol: String,
+    #[serde(rename = "Previous symbols")]
+    pub(crate) previous_symbols: Vec<String>,
     #[serde(rename = "Approved name")]
     pub(crate) name: String,
     #[serde(rename = "Ensembl ID(supplied by Ensembl)")]
@@ -34,8 +36,14 @@ impl Genes {
                     .unwrap_or_default()
                     .to_string()
                     .replace(' ', ""),
-                name: record.get(2).unwrap_or_default().to_string(),
-                ensembl_id: record.get(4).map(ToString::to_string),
+                previous_symbols: record
+                    .get(2)
+                    .unwrap_or_default()
+                    .split(',')
+                    .map(ToString::to_string)
+                    .collect(),
+                name: record.get(3).unwrap_or_default().to_string(),
+                ensembl_id: record.get(5).map(ToString::to_string),
             })
             .collect::<Vec<_>>();
 
@@ -46,6 +54,13 @@ impl Genes {
         self.genes
             .iter()
             .find(|gene| gene.symbol == symbol)
+            .cloned()
+    }
+
+    pub(crate) fn find_by_previous_symbol(&self, symbol: &str) -> Option<Gene> {
+        self.genes
+            .iter()
+            .find(|&gene| gene.previous_symbols.contains(&symbol.to_string()))
             .cloned()
     }
 }
@@ -65,5 +80,17 @@ mod tests {
         assert_eq!(gene.hgnc_id, "HGNC:1100");
         assert_eq!(gene.name, "BRCA1 DNA repair associated");
         assert_eq!(gene.ensembl_id, Some("ENSG00000012048".to_string()));
+    }
+
+    #[test]
+    fn test_should_find_gene_by_previous_symbol() {
+        let genes = Genes::new();
+        let gene = genes.find_by_previous_symbol("FAM83H");
+        assert!(gene.is_some());
+        let gene = gene.unwrap();
+        assert_eq!(gene.symbol, "SACK1H");
+        assert_eq!(gene.hgnc_id, "HGNC:24797");
+        assert_eq!(gene.name, "scaffolding CK1 anchoring protein H");
+        assert_eq!(gene.ensembl_id, Some("ENSG00000180921".to_string()));
     }
 }
