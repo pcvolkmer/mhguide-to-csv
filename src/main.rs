@@ -1,6 +1,7 @@
 use crate::export_record::Record;
 use clap::Parser;
 use rayon::prelude::*;
+use rust_xlsxwriter::{Format, Workbook};
 use std::fs;
 
 mod cli;
@@ -30,6 +31,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
     })
     .collect::<Vec<_>>();
+
+    if cli.xlsx {
+        let mut workbook = Workbook::new();
+        let worksheet = workbook.add_worksheet();
+        worksheet.set_name("Variants")?;
+
+        worksheet.deserialize_headers_with_format::<Record>(0, 0, &Format::new().set_bold())?;
+        worksheet.serialize(&records)?;
+
+        worksheet.autofit();
+
+        let mut output_file = cli.input_file.clone();
+        output_file.set_extension("xlsx");
+        workbook.save(output_file)?;
+
+        return Ok(());
+    }
 
     let mut writer = csv::WriterBuilder::new()
         .has_headers(true)

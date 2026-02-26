@@ -21,4 +21,7 @@ pub(crate) struct Cli {
         help = "Nur Varianten mit '(Likely) oncogenic' verwenden, keine aus 'REPORT_NARRATIVE'"
     )]
     pub(crate) oncogenic: bool,
+
+    #[arg(long, help = "Exportiere im XLSX-Format (Excel 2007-365)")]
+    pub(crate) xlsx: bool,
 }
