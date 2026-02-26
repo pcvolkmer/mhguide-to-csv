@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.2](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.1...v0.3.2) (2026-02-26)
+
+
+### Features
+
+* add pathogenic classification ([#13](https://github.com/pcvolkmer/mhguide-to-csv/issues/13)) ([ec45c19](https://github.com/pcvolkmer/mhguide-to-csv/commit/ec45c197435aa60d64a00a01612a6d18ec5413d9))
+* search genes by previous symbols ([#12](https://github.com/pcvolkmer/mhguide-to-csv/issues/12)) ([61e27b8](https://github.com/pcvolkmer/mhguide-to-csv/commit/61e27b88d3d3620d178cec8b188a4c6dde1d5cc3))
+
+
+### Bug Fixes
+
+* allow hyphen in gene symbol ([dadd3fa](https://github.com/pcvolkmer/mhguide-to-csv/commit/dadd3faa052ae64d8b5a593ab01275ea1131d396))
+* allow underscore in gene symbol ([7f5406d](https://github.com/pcvolkmer/mhguide-to-csv/commit/7f5406d1eed046ccc71cb545a9e52ac266d54ed1))
+
 ## [0.3.1](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.0...v0.3.1) (2026-02-25)
 
 
