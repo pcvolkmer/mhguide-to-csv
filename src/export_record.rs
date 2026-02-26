@@ -48,6 +48,8 @@ pub(crate) struct Record {
     cnv_type: String,
     #[serde(rename = "Total CN")]
     total_copy_number: String,
+    #[serde(rename = "Pathogenitätsklasse")]
+    classification: String,
 }
 
 impl Record {
@@ -170,6 +172,7 @@ impl Record {
                 _ => "",
             }
             .to_string(),
+            classification: variant.classification_name.clone().unwrap_or_default(),
         }
     }
 }
