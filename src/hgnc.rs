@@ -41,6 +41,7 @@ impl Genes {
                     .unwrap_or_default()
                     .split(',')
                     .map(ToString::to_string)
+                    .map(|s| s.trim().to_string())
                     .collect(),
                 name: record.get(3).unwrap_or_default().to_string(),
                 ensembl_id: record.get(5).map(ToString::to_string),
