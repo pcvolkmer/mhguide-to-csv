@@ -53,6 +53,42 @@ pub(crate) struct Record {
 }
 
 impl Record {
+    /// Constructs a `Record` from the input variant details.
+    ///
+    /// This function generates a `Record` by extracting and transforming information
+    /// from the provided variant, genomic reference version, and H-number (identifier).
+    ///
+    /// # Arguments
+    ///
+    /// * `h_number` - A reference to the H-number string, which serves as an identifier.
+    /// * `ref_genome_version` - The reference genome version.
+    /// * `variant` - A reference to a `mhguide::Variant` object which provides variant information.
+    ///
+    /// # Returns
+    ///
+    /// * `Record` - An instance of the `Record` struct populated with various variant details,
+    /// including gene information, genomic changes, protein modifications, and various metadata.
+    ///
+    /// # Behavior
+    ///
+    /// * Identifies the corresponding gene based on the variant's gene symbol, falling back
+    ///   to previous symbols if necessary.
+    /// * Determines the type of variant (e.g., "Copy Number Variation" or "Einfache Variante").
+    /// * Converts raw DNA and protein modifications into standardized representations.
+    /// * Extracts genomic position, allelic information, and variant-specific frequencies.
+    /// * Classifies copy number variations (CNVs) as 'loss', 'low level gain', or 'high level gain',
+    ///   depending on variant data.
+    /// * Retrieves additional metadata such as gene identifiers and database references
+    ///   from `hgnc::Genes`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let ref_genome_version = RefGenomeVersion::new("GRCh38");
+    /// let variant = mhguide::Variant::new();
+    /// let record = Record::from_variant("H12345", &ref_genome_version, &variant);
+    /// println!("{:?}", record);
+    /// ```
     pub(crate) fn from_variant(
         h_number: &str,
         ref_genome_version: &RefGenomeVersion,

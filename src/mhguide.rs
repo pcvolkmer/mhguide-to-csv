@@ -15,10 +15,45 @@ pub(crate) struct MhGuide {
 }
 
 impl MhGuide {
+    /// Retrieves all the variants.
+    ///
+    /// This method collects all variants using parallel iteration, enabling efficient processing for large datasets.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec` containing references to all the `Variant` instances in `self.variants`.
+    ///
+    /// # Example
+    /// ```rust
+    /// let result = mh_guide.all_variants();
+    /// for variant in result {
+    ///     println!("{:?}", variant);
+    /// }
+    /// ```
     pub(crate) fn all_variants(&self) -> Vec<&Variant> {
         self.variants.par_iter().collect()
     }
 
+    /// ```rust
+    /// Retrieves a list of relevant genetic variants based on oncogenic properties and matching criteria.
+    ///
+    /// This function collects the relevant variants for a report by:
+    /// 1. Starting with a collection of oncogenic variants.
+    /// 2. Adding variants mentioned in `REPORT_NARRATIVE` based on gene symbol and protein modifications.
+    /// 3. Adding variants mentioned in `REPORT_NARRATIVE` based on gene symbol and transcript modifications.
+    ///
+    /// The function ensures that the resulting list is deduplicated before being returned.
+    ///
+    /// # Returns
+    /// A vector of references to relevant `Variant` objects.
+    ///
+    /// # Examples
+    /// ```rust
+    /// let variants = mh_guide.relevant_variants();
+    /// for variant in variants {
+    ///     println!("{:?}", variant);
+    /// }
+    /// ```
     pub(crate) fn relevant_variants(&self) -> Vec<&Variant> {
         let mut result = self.oncogenic_variants();
 
@@ -62,6 +97,27 @@ impl MhGuide {
         result
     }
 
+    /// ```rust
+    /// Filters and retrieves all oncogenic variants
+    ///
+    /// This function searches through the `variants` field and identifies those
+    /// variants that are classified as "oncogenic". The search is case-insensitive
+    /// and checks if the `ONCOGENIC_CLASSIFICATION_NAME` contains the substring
+    /// "oncogenic".
+    ///
+    /// # Returns
+    ///
+    /// A `Vec` containing references to the variants that are classified as oncogenic.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let variants = my_struct.oncogenic_variants();
+    ///
+    /// for variant in variants {
+    ///     println!("Oncogenic Variant: {:?}", variant);
+    /// }
+    /// ```
     pub(crate) fn oncogenic_variants(&self) -> Vec<&Variant> {
         self.variants
             .par_iter()
