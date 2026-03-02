@@ -75,7 +75,7 @@ fn read_json_content(path: &PathBuf) -> Result<String, Box<dyn std::error::Error
         Some(ext) if ext == "zip" => {
             let mut archive = zip::ZipArchive::new(fs::File::open(path)?)?;
             if archive.len() != 1
-                || std::path::Path::new(archive.by_index(0)?.name())
+                || !std::path::Path::new(archive.by_index(0)?.name())
                     .extension()
                     .is_some_and(|ext| ext.eq_ignore_ascii_case("json"))
             {
@@ -93,5 +93,30 @@ fn read_json_content(path: &PathBuf) -> Result<String, Box<dyn std::error::Error
             "Unsupported file format. Only JSON files and ZIP compressed JSON files are supported."
                 .into(),
         ),
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use crate::read_json_content;
+    use std::path::PathBuf;
+    use std::str::FromStr;
+
+    const TEST_CONTENT: &str = include_str!(".././testfiles/sv-mhguide.json");
+
+    #[test]
+    fn test_should_read_json_content() {
+        let actual =
+            read_json_content(&PathBuf::from_str("./testfiles/sv-mhguide.json").unwrap()).unwrap();
+        assert_eq!(actual, TEST_CONTENT);
+    }
+
+    #[test]
+    fn test_should_read_zip_content() {
+        let actual =
+            read_json_content(&PathBuf::from_str("./testfiles/sv-mhguide.json.zip").unwrap())
+                .unwrap();
+        assert_eq!(actual, TEST_CONTENT);
     }
 }
