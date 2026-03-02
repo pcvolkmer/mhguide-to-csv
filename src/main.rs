@@ -74,6 +74,16 @@ fn read_json_content(path: &PathBuf) -> Result<String, Box<dyn std::error::Error
         Some(ext) if ext == "json" => Ok(fs::read_to_string(path)?),
         Some(ext) if ext == "zip" => {
             let mut archive = zip::ZipArchive::new(fs::File::open(path)?)?;
+            if archive.len() != 1
+                || std::path::Path::new(archive.by_index(0)?.name())
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("json"))
+            {
+                return Err(
+                    "ZIP archive does not contain a single JSON file. Only JSON files and ZIP compressed JSON files are supported."
+                        .into(),
+                );
+            }
             let mut file = archive.by_index(0)?;
             let mut result = String::new();
             file.read_to_string(&mut result)?;
