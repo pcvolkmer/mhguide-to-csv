@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.4...v0.3.5) (2026-03-02)
+
+
+### Features
+
+* add CNV from report narrative ([#18](https://github.com/pcvolkmer/mhguide-to-csv/issues/18)) ([abeb67a](https://github.com/pcvolkmer/mhguide-to-csv/commit/abeb67a4055324fbffb138fd9b5dd7340f702dd1))
+
 ## [0.3.4](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.3...v0.3.4) (2026-03-02)
 
 
