@@ -39,8 +39,8 @@ impl MhGuide {
     ///
     /// This function collects the relevant variants for a report by:
     /// 1. Starting with a collection of oncogenic variants.
-    /// 2. Adding variants mentioned in `REPORT_NARRATIVE` based on gene symbol and protein modifications.
-    /// 3. Adding variants mentioned in `REPORT_NARRATIVE` based on gene symbol and transcript modifications.
+    /// 2. Removing variants that are mentioned as "Artifacts"
+    /// 3. Adding variants mentioned in `REPORT_NARRATIVE` without being artifacts.
     ///
     /// The function ensures that the resulting list is deduplicated before being returned.
     ///
@@ -56,6 +56,32 @@ impl MhGuide {
     /// ```
     pub(crate) fn relevant_variants(&self) -> Vec<&Variant> {
         let mut result = self.oncogenic_variants();
+
+        result.retain(|v| {
+            !self
+                .removable_report_narrative_variants()
+                .iter()
+                .any(|(gene, modification)| {
+                    gene == &v.gene_symbol.clone().unwrap_or_default()
+                        && modification.starts_with("p.")
+                        && modification == &v.protein_modification.clone().unwrap_or_default()
+                })
+        });
+
+        result.retain(|v| {
+            !self
+                .removable_report_narrative_variants()
+                .iter()
+                .any(|(gene, modification)| {
+                    gene == &v.gene_symbol.clone().unwrap_or_default()
+                        && modification.starts_with("c.")
+                        && modification
+                            == &v
+                                .transcript_hgvs_modified_object
+                                .clone()
+                                .unwrap_or_default()
+                })
+        });
 
         let report_narrative_variants = self.report_narrative_variants();
 
@@ -92,6 +118,10 @@ impl MhGuide {
                 })
                 .collect::<Vec<_>>(),
         );
+
+        result.sort_by_key(|v| v.protein_modification.clone());
+        result.sort_by_key(|v| v.transcript_hgvs_modified_object.clone());
+        result.sort_by_key(|v| v.gene_symbol.clone());
         result.dedup();
 
         result
@@ -128,8 +158,33 @@ impl MhGuide {
             .collect()
     }
 
-    #[allow(clippy::expect_used)]
     fn report_narrative_variants(&self) -> Vec<(String, String)> {
+        let mut result = Self::find_report_narrative_variants(&self.report_narrative);
+        let removable = self.removable_report_narrative_variants();
+
+        result.retain(|(gene, modification)| {
+            !removable
+                .iter()
+                .any(|(g, m)| g == gene && m == modification)
+        });
+
+        result
+    }
+
+    #[allow(clippy::expect_used)]
+    fn removable_report_narrative_variants(&self) -> Vec<(String, String)> {
+        self.report_narrative
+            .split('\n')
+            // Only one variant per line
+            .filter(|&s| Self::find_report_narrative_variants(s).len() == 1)
+            // Exclusion string(s)
+            .filter(|&s| s.contains("mögliches Artefakt"))
+            .flat_map(Self::find_report_narrative_variants)
+            .collect()
+    }
+
+    #[allow(clippy::expect_used)]
+    fn find_report_narrative_variants(s: &str) -> Vec<(String, String)> {
         fn collect(s: &str, re: &Regex) -> Vec<(String, String)> {
             re.find_iter(s)
                 .filter_map(|m| {
@@ -146,14 +201,14 @@ impl MhGuide {
         let protein_regex = Regex::new(
             r"[A-Z0-9_\\-]+\s+p\.[*FLSYCWPHQRIMTNKVADEG]?(\d+)?_?[*FLSYCWPHQRIMTNKVADEG]\d+(del|ins|delins|dup)?([*=FLSYCWPHQRIMTNKVADEG]+|fs)?"
         )
-        .expect("Invalid regex");
-        let mut result = collect(&self.report_narrative, &protein_regex);
+            .expect("Invalid regex");
+        let mut result = collect(s, &protein_regex);
 
         let cdna_regex = Regex::new(
             r"[A-Z0-9_\\-]+\s+c\.(-?\d+)(?:_(-?\d+))?([ACGT]>|dup|del|ins|delins)([ACGT]+)?",
         )
         .expect("Invalid regex");
-        let cdna_result = collect(&self.report_narrative, &cdna_regex);
+        let cdna_result = collect(s, &cdna_regex);
 
         result.extend(cdna_result);
 
@@ -798,6 +853,55 @@ mod tests {
                     copy_number: Some(12.34),
                     classification_name: None,
                     oncogenic_classification_name: Some("benign".to_string()),
+                },
+            ],
+            report_narrative: report_narrative.to_string(),
+        };
+
+        let actual = mh_guide.relevant_variants();
+
+        assert_eq!(actual.len(), expected_variants);
+    }
+
+    #[rstest]
+    #[case("A1BG-AS1 p.K1234F liegt auf einem Homopolymer; mögliches Artefakt", 1)]
+    #[case("A1BG-AS1 c.123T>C liegt auf einem Homopolymer; mögliches Artefakt", 1)]
+    fn test_remove_artifacts(#[case] report_narrative: &str, #[case] expected_variants: usize) {
+        let mh_guide = MhGuide {
+            general: General {
+                order_date: "2026-02-11".to_string(),
+                ref_genome_version: RefGenomeVersion::Hg19,
+                patient_identifier: PatientIdentifier {
+                    h_number: "H10000-26".to_string(),
+                    pid: "PID0123456".to_string(),
+                },
+            },
+            variants: vec![
+                Variant {
+                    gene_symbol: Some("A1BG-AS1".to_string()),
+                    protein_modification: Some("p.K1234F".to_string()),
+                    protein_variant_type: None,
+                    chromosome: Some("chr19".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(12.34),
+                    classification_name: None,
+                    oncogenic_classification_name: Some("oncogenic".to_string()),
+                },
+                Variant {
+                    gene_symbol: Some("APOBEC3A_B".to_string()),
+                    protein_modification: Some("p.K1234F".to_string()),
+                    protein_variant_type: None,
+                    chromosome: Some("chr22".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(12.34),
+                    classification_name: None,
+                    oncogenic_classification_name: Some("oncogenic".to_string()),
                 },
             ],
             report_narrative: report_narrative.to_string(),

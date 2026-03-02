@@ -103,7 +103,7 @@ mod tests {
     use std::path::PathBuf;
     use std::str::FromStr;
 
-    const TEST_CONTENT: &str = include_str!(".././testfiles/sv-mhguide.json");
+    const TEST_CONTENT: &str = include_str!("../testfiles/sv-mhguide.json");
 
     #[test]
     fn test_should_read_json_content() {
