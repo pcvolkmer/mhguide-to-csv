@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.4](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.3...v0.3.4) (2026-03-02)
+
+
+### Features
+
+* check zip file content for single JSON file ([e35369c](https://github.com/pcvolkmer/mhguide-to-csv/commit/e35369c8e235ad5ceb67627e4d662ca9720abff3))
+* remove artifact variants ([a4d06c8](https://github.com/pcvolkmer/mhguide-to-csv/commit/a4d06c8d9ac53463ccc61d55e0fa784219ee648a))
+
 ## [0.3.3](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.2...v0.3.3) (2026-02-26)
 
 
