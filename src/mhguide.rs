@@ -83,14 +83,14 @@ impl MhGuide {
                 })
         });
 
-        let report_narrative_variants = self.report_narrative_variants();
+        let report_narrative_simple_variants = self.report_narrative_simple_variants();
 
         result.extend(
             self.variants
                 .par_iter()
                 .filter(|v| match v.protein_modification {
                     Some(ref protein_modification) => {
-                        report_narrative_variants
+                        report_narrative_simple_variants
                             .iter()
                             .any(|(gene, modification)| {
                                 modification.starts_with("p.")
@@ -107,12 +107,32 @@ impl MhGuide {
             self.variants
                 .par_iter()
                 .filter(|v| match v.transcript_hgvs_modified_object {
-                    Some(ref transcript_hgvs_modified_object) => report_narrative_variants
+                    Some(ref transcript_hgvs_modified_object) => report_narrative_simple_variants
                         .iter()
                         .any(|(gene, modification)| {
                             modification.starts_with("c.")
                                 && gene.clone() == v.gene_symbol.clone().unwrap_or_default()
                                 && modification == transcript_hgvs_modified_object
+                        }),
+                    _ => false,
+                })
+                .collect::<Vec<_>>(),
+        );
+
+        result.extend(
+            self.variants
+                .par_iter()
+                .filter(|v| match v.protein_variant_type {
+                    Some(ref protein_variant_type) => self
+                        .report_narrative_copy_variants()
+                        .iter()
+                        .any(|(gene, gnc)| {
+                            gene.clone() == v.gene_symbol.clone().unwrap_or_default()
+                                && protein_variant_type == &VariantType::CopyNumberVariant
+                                && match v.copy_number {
+                                    Some(copy_number) => copy_number.eq(gnc),
+                                    None => false,
+                                }
                         }),
                     _ => false,
                 })
@@ -158,8 +178,8 @@ impl MhGuide {
             .collect()
     }
 
-    fn report_narrative_variants(&self) -> Vec<(String, String)> {
-        let mut result = Self::find_report_narrative_variants(&self.report_narrative);
+    fn report_narrative_simple_variants(&self) -> Vec<(String, String)> {
+        let mut result = Self::find_report_narrative_simple_variants(&self.report_narrative);
         let removable = self.removable_report_narrative_variants();
 
         result.retain(|(gene, modification)| {
@@ -176,15 +196,15 @@ impl MhGuide {
         self.report_narrative
             .split('\n')
             // Only one variant per line
-            .filter(|&s| Self::find_report_narrative_variants(s).len() == 1)
+            .filter(|&s| Self::find_report_narrative_simple_variants(s).len() == 1)
             // Exclusion string(s)
             .filter(|&s| s.contains("mögliches Artefakt"))
-            .flat_map(Self::find_report_narrative_variants)
+            .flat_map(Self::find_report_narrative_simple_variants)
             .collect()
     }
 
     #[allow(clippy::expect_used)]
-    fn find_report_narrative_variants(s: &str) -> Vec<(String, String)> {
+    fn find_report_narrative_simple_variants(s: &str) -> Vec<(String, String)> {
         fn collect(s: &str, re: &Regex) -> Vec<(String, String)> {
             re.find_iter(s)
                 .filter_map(|m| {
@@ -213,6 +233,31 @@ impl MhGuide {
         result.extend(cdna_result);
 
         result
+    }
+
+    #[allow(clippy::expect_used)]
+    fn report_narrative_copy_variants(&self) -> Vec<(String, f32)> {
+        let regex = Regex::new(r"(?<gene>[A-Z0-9_\\-]+)\s+Copy number.*GCN\s*=\s*(?<gcn>\d+\.\d+)")
+            .expect("Invalid regex");
+
+        self.report_narrative
+            .split('\n')
+            .filter_map(|line| {
+                let captures = regex.captures(line)?;
+                let gene = captures.name("gene");
+                let gcn = captures.name("gcn");
+                if gene.is_none() || gcn.is_none() {
+                    return None;
+                }
+                let gene = gene.expect("Missing gene").as_str().to_owned();
+                let gcn = gcn
+                    .expect("Missing GNC")
+                    .as_str()
+                    .parse::<f32>()
+                    .unwrap_or_default();
+                Some((gene, gcn))
+            })
+            .collect::<Vec<_>>()
     }
 }
 
@@ -279,6 +324,44 @@ pub(crate) struct General {
     pub(crate) patient_identifier: PatientIdentifier,
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) enum VariantType {
+    SimpleVariant(String),
+    CopyNumberVariant,
+    Other(String),
+}
+
+impl<'de> Deserialize<'de> for VariantType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match Deserialize::deserialize(deserializer)? {
+            "SNV" => Ok(Self::SimpleVariant("SNV".to_string())),
+            "ins" => Ok(Self::SimpleVariant("ins".to_string())),
+            "del" => Ok(Self::SimpleVariant("del".to_string())),
+            "CNA" => Ok(Self::CopyNumberVariant),
+            other => Ok(Self::Other(other.to_string())),
+        }
+    }
+}
+
+impl Default for VariantType {
+    fn default() -> Self {
+        Self::Other("nicht angegeben".to_string())
+    }
+}
+
+impl Display for VariantType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SimpleVariant(variant_type) => write!(f, "Einfache Variante ({variant_type})"),
+            Self::CopyNumberVariant => write!(f, "Copy Number Variation"),
+            Self::Other(other) => write!(f, "Andere Variante ({other})"),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, PartialEq)]
 pub(crate) struct Variant {
     #[serde(rename = "GENE_SYMBOL")]
@@ -286,7 +369,9 @@ pub(crate) struct Variant {
     #[serde(rename = "PROTEIN_MODIFICATION")]
     pub(crate) protein_modification: Option<String>,
     #[serde(rename = "PROTEIN_VARIANT_TYPE")]
-    pub(crate) protein_variant_type: Option<String>,
+    pub(crate) protein_variant_type: Option<VariantType>,
+    #[serde(rename = "DISPLAY_VARIANT_TYPE")]
+    pub(crate) display_variant_type: Option<VariantType>,
     #[serde(rename = "CHROMOSOMAL_MODIFIED_OBJECT")]
     pub(crate) chromosome: Option<String>,
     #[serde(rename = "CHROMOSOMAL_MODIFICATION")]
@@ -467,6 +552,7 @@ impl FromStr for DnaChange {
 
 #[cfg(test)]
 mod tests {
+    use crate::mhguide::VariantType::{CopyNumberVariant, SimpleVariant};
     use crate::mhguide::*;
     use rstest::rstest;
 
@@ -490,7 +576,8 @@ mod tests {
                 variants: vec![Variant {
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: Some("p.A123V".to_string()),
-                    protein_variant_type: Some("SNV".to_string()),
+                    protein_variant_type: Some(SimpleVariant("SNV".to_string())),
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: Some("g.12345678G>A".to_string()),
                     transcript_hgvs_modified_object: Some("c.123C>T".to_string()),
@@ -526,6 +613,7 @@ mod tests {
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: None,
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: Some("g.12345670_12345678del".to_string()),
                     transcript_hgvs_modified_object: Some("c.120-1_128_1del".to_string()),
@@ -561,6 +649,7 @@ mod tests {
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: None,
                     protein_variant_type: None,
+                    display_variant_type: Some(CopyNumberVariant),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: None,
@@ -695,6 +784,7 @@ mod tests {
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: None,
@@ -708,6 +798,7 @@ mod tests {
                     gene_symbol: Some("KMT2C".to_string()),
                     protein_modification: Some("p.K1234fs".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: None,
@@ -721,6 +812,7 @@ mod tests {
                     gene_symbol: Some("FANCA".to_string()),
                     protein_modification: Some("p.S1234F".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: None,
@@ -765,6 +857,7 @@ mod tests {
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
@@ -778,6 +871,7 @@ mod tests {
                     gene_symbol: Some("KMT2C".to_string()),
                     protein_modification: Some("p.K1234fs".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: Some("c.123_124del".to_string()),
@@ -791,6 +885,7 @@ mod tests {
                     gene_symbol: Some("FANCA".to_string()),
                     protein_modification: Some("p.S1234F".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr1".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: Some("c.123A>G".to_string()),
@@ -832,6 +927,7 @@ mod tests {
                     gene_symbol: Some("A1BG-AS1".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr19".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
@@ -845,6 +941,7 @@ mod tests {
                     gene_symbol: Some("APOBEC3A_B".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr22".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
@@ -881,6 +978,7 @@ mod tests {
                     gene_symbol: Some("A1BG-AS1".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr19".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
@@ -894,6 +992,7 @@ mod tests {
                     gene_symbol: Some("APOBEC3A_B".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
                     chromosome: Some("chr22".to_string()),
                     chromosome_modification: None,
                     transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
@@ -902,6 +1001,73 @@ mod tests {
                     copy_number: Some(12.34),
                     classification_name: None,
                     oncogenic_classification_name: Some("oncogenic".to_string()),
+                },
+            ],
+            report_narrative: report_narrative.to_string(),
+        };
+
+        let actual = mh_guide.relevant_variants();
+
+        assert_eq!(actual.len(), expected_variants);
+    }
+
+    #[rstest]
+    #[case("KMT2C Copy number LOSS GCN = 0.00", 2)]
+    fn test_add_cnv_report_narrative(
+        #[case] report_narrative: &str,
+        #[case] expected_variants: usize,
+    ) {
+        let mh_guide = MhGuide {
+            general: General {
+                order_date: "2026-02-11".to_string(),
+                ref_genome_version: RefGenomeVersion::Hg19,
+                patient_identifier: PatientIdentifier {
+                    h_number: "H10000-26".to_string(),
+                    pid: "PID0123456".to_string(),
+                },
+            },
+            variants: vec![
+                Variant {
+                    gene_symbol: Some("A1BG-AS1".to_string()),
+                    protein_modification: Some("p.K1234F".to_string()),
+                    protein_variant_type: None,
+                    display_variant_type: Some(CopyNumberVariant),
+                    chromosome: Some("chr19".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(12.34),
+                    classification_name: None,
+                    oncogenic_classification_name: Some("oncogenic".to_string()),
+                },
+                Variant {
+                    gene_symbol: Some("KMT2C".to_string()),
+                    protein_modification: Some("p.K1234fs".to_string()),
+                    protein_variant_type: Some(CopyNumberVariant),
+                    display_variant_type: Some(CopyNumberVariant),
+                    chromosome: Some("chr1".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: None,
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(0.00),
+                    classification_name: None,
+                    oncogenic_classification_name: Some("Unclassified".to_string()),
+                },
+                Variant {
+                    gene_symbol: Some("KMT2C".to_string()),
+                    protein_modification: Some("p.K1234fs".to_string()),
+                    protein_variant_type: Some(CopyNumberVariant),
+                    display_variant_type: Some(CopyNumberVariant),
+                    chromosome: Some("chr1".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: None,
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: None,
+                    classification_name: None,
+                    oncogenic_classification_name: Some("Unclassified".to_string()),
                 },
             ],
             report_narrative: report_narrative.to_string(),

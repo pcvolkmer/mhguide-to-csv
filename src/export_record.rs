@@ -1,6 +1,6 @@
 use crate::hgnc::Genes;
 use crate::mhguide;
-use crate::mhguide::{RefGenomeVersion, three_letter_protein_modification};
+use crate::mhguide::{RefGenomeVersion, VariantType, three_letter_protein_modification};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
@@ -106,18 +106,13 @@ impl Record {
         Record {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
-            variantenart: if variant
-                .protein_modification
-                .clone()
-                .unwrap_or_default()
-                .to_ascii_lowercase()
-                .starts_with("copy number")
-            {
-                "Copy Number Variation"
-            } else {
-                "Einfache Variante (?)"
-            }
-            .to_string(),
+            variantenart: match &variant.display_variant_type {
+                Some(variant_type) => variant_type.to_string(),
+                None => match &variant.protein_variant_type {
+                    Some(variant_type) => variant_type.to_string(),
+                    None => VariantType::default().to_string(),
+                },
+            },
             gene: variant.gene_symbol.clone().unwrap_or_default(),
             chromosome: variant.chromosome.clone().unwrap_or_default(),
             ensembl_id: gene.ensembl_id.unwrap_or_default(),
