@@ -198,7 +198,9 @@ impl MhGuide {
             // Only one variant per line
             .filter(|&s| Self::find_report_narrative_simple_variants(s).len() == 1)
             // Exclusion string(s)
-            .filter(|&s| s.contains("mögliches Artefakt"))
+            .filter(|&s| {
+                (s.contains("möglich") || s.contains("wahrscheinlich")) && s.contains("Artefakt")
+            })
             .flat_map(Self::find_report_narrative_simple_variants)
             .collect()
     }
@@ -963,6 +965,14 @@ mod tests {
     #[rstest]
     #[case("A1BG-AS1 p.K1234F liegt auf einem Homopolymer; mögliches Artefakt", 1)]
     #[case("A1BG-AS1 c.123T>C liegt auf einem Homopolymer; mögliches Artefakt", 1)]
+    #[case(
+        "A1BG-AS1 p.K1234F liegt auf einem Homopolymer; wahrscheinlich ein Artefakt",
+        1
+    )]
+    #[case(
+        "A1BG-AS1 c.123T>C liegt auf einem Homopolymer; wahrscheinlich ein Artefakt",
+        1
+    )]
     fn test_remove_artifacts(#[case] report_narrative: &str, #[case] expected_variants: usize) {
         let mh_guide = MhGuide {
             general: General {
