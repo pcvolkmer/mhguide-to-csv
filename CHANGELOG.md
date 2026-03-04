@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.6](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.5...v0.3.6) (2026-03-04)
+
+
+### Bug Fixes
+
+* add other used artifact wordings ([42d77fb](https://github.com/pcvolkmer/mhguide-to-csv/commit/42d77fbbac00dd168e8381b3469c4740ca749a63))
+
 ## [0.3.5](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.4...v0.3.5) (2026-03-02)
 
 
