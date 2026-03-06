@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.7](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.6...v0.3.7) (2026-03-06)
+
+
+### Features
+
+* add biomarker structs ([38afacb](https://github.com/pcvolkmer/mhguide-to-csv/commit/38afacb983e07479758a9d97fd80d5c586fd2ed9))
+* add cnv from biomarkers ([51ae04e](https://github.com/pcvolkmer/mhguide-to-csv/commit/51ae04eccd800d29eec00b7a9e850f44ffcc8bbe))
+* add more CNV from report narrative ([128db30](https://github.com/pcvolkmer/mhguide-to-csv/commit/128db30fd7da816dffe8a5314441d4c1a77e72cf))
+
 ## [0.3.6](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.5...v0.3.6) (2026-03-04)
 
 
