@@ -1,5 +1,4 @@
 use crate::export_record::Record;
-use crate::mhguide;
 use crate::mhguide::MhGuide;
 use rust_xlsxwriter::{Format, Workbook};
 use std::fs;
@@ -35,7 +34,7 @@ fn read_json_content(path: &PathBuf) -> Result<String, Box<dyn std::error::Error
 
 pub(crate) fn read_file(path: &PathBuf) -> Result<MhGuide, Box<dyn std::error::Error>> {
     let json = read_json_content(path)?;
-    Ok(serde_json::from_str::<mhguide::MhGuide>(&json)?)
+    Ok(serde_json::from_str::<MhGuide>(&json)?)
 }
 
 pub(crate) fn write_csv_file(
