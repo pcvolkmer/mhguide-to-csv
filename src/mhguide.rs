@@ -1,3 +1,4 @@
+use crate::mhguide::VariantEffect::{CopyGain, CopyLoss};
 use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Deserializer};
@@ -41,8 +42,9 @@ impl MhGuide {
     ///
     /// This function collects the relevant variants for a report by:
     /// 1. Starting with a collection of oncogenic variants.
-    /// 2. Removing variants that are mentioned as "Artifacts"
+    /// 2. Adding CNA variants from Biomarkers
     /// 3. Adding variants mentioned in `REPORT_NARRATIVE` without being artifacts.
+    /// 4. Removing variants that are mentioned as "Artifacts"
     ///
     /// The function ensures that the resulting list is deduplicated before being returned.
     ///
@@ -59,31 +61,22 @@ impl MhGuide {
     pub(crate) fn relevant_variants(&self) -> Vec<&Variant> {
         let mut result = self.oncogenic_variants();
 
-        result.retain(|v| {
-            !self
-                .removable_report_narrative_variants()
-                .iter()
-                .any(|(gene, modification)| {
-                    gene == &v.gene_symbol.clone().unwrap_or_default()
-                        && modification.starts_with("p.")
-                        && modification == &v.protein_modification.clone().unwrap_or_default()
-                })
-        });
+        let cnv_biomarker_variant_ids = self
+            .biomarkers
+            .notable_biomarkers
+            .iter()
+            .flat_map(|nb| nb.biomarkers.iter())
+            .filter(|b| b.variant_effect == Some(CopyGain) || b.variant_effect == Some(CopyLoss))
+            .map(|b| b.id.to_owned())
+            .collect::<Vec<_>>();
 
-        result.retain(|v| {
-            !self
-                .removable_report_narrative_variants()
-                .iter()
-                .any(|(gene, modification)| {
-                    gene == &v.gene_symbol.clone().unwrap_or_default()
-                        && modification.starts_with("c.")
-                        && modification
-                            == &v
-                                .transcript_hgvs_modified_object
-                                .clone()
-                                .unwrap_or_default()
-                })
-        });
+        result.extend(
+            self.variants
+                .par_iter()
+                .filter(|v| matches!(v.display_variant_type, Some(VariantType::CopyNumberVariant)))
+                .filter(|v| cnv_biomarker_variant_ids.contains(&v.id))
+                .collect::<Vec<_>>(),
+        );
 
         let report_narrative_simple_variants = self.report_narrative_simple_variants();
 
@@ -140,6 +133,32 @@ impl MhGuide {
                 })
                 .collect::<Vec<_>>(),
         );
+
+        result.retain(|v| {
+            !self
+                .removable_report_narrative_variants()
+                .iter()
+                .any(|(gene, modification)| {
+                    gene == &v.gene_symbol.clone().unwrap_or_default()
+                        && modification.starts_with("p.")
+                        && modification == &v.protein_modification.clone().unwrap_or_default()
+                })
+        });
+
+        result.retain(|v| {
+            !self
+                .removable_report_narrative_variants()
+                .iter()
+                .any(|(gene, modification)| {
+                    gene == &v.gene_symbol.clone().unwrap_or_default()
+                        && modification.starts_with("c.")
+                        && modification
+                            == &v
+                                .transcript_hgvs_modified_object
+                                .clone()
+                                .unwrap_or_default()
+                })
+        });
 
         result.sort_by_key(|v| v.protein_modification.clone());
         result.sort_by_key(|v| v.transcript_hgvs_modified_object.clone());
@@ -388,6 +407,8 @@ impl Display for VariantType {
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub(crate) struct Variant {
+    #[serde(rename = "DETECTED_VAR_ID")]
+    id: u32,
     #[serde(rename = "GENE_SYMBOL")]
     pub(crate) gene_symbol: Option<String>,
     #[serde(rename = "PROTEIN_MODIFICATION")]
@@ -588,6 +609,8 @@ pub(crate) struct NotableBiomarker {
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub(crate) struct Biomarker {
+    #[serde(rename = "DETECTED_VAR_ID")]
+    id: u32,
     #[serde(rename = "DISPLAY_VARIANT_TYPE")]
     pub(crate) display_variant_type: Option<VariantType>,
     #[serde(rename = "VARIANT_EFFECT")]
@@ -620,6 +643,7 @@ mod tests {
                     }
                 },
                 variants: vec![Variant {
+                    id: 12345678,
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: Some("p.A123V".to_string()),
                     protein_variant_type: Some(SimpleVariant("SNV".to_string())),
@@ -636,6 +660,7 @@ mod tests {
                 biomarkers: Biomarkers {
                     notable_biomarkers: vec![NotableBiomarker {
                         biomarkers: vec![Biomarker {
+                            id: 12345678,
                             display_variant_type: Some(Other("TMB".to_string())),
                             variant_effect: None,
                             copy_number: None,
@@ -665,6 +690,7 @@ mod tests {
                     }
                 },
                 variants: vec![Variant {
+                    id: 12345678,
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: None,
                     protein_variant_type: None,
@@ -681,6 +707,7 @@ mod tests {
                 biomarkers: Biomarkers {
                     notable_biomarkers: vec![NotableBiomarker {
                         biomarkers: vec![Biomarker {
+                            id: 12345678,
                             display_variant_type: Some(Other("TMB".to_string())),
                             variant_effect: None,
                             copy_number: None,
@@ -710,6 +737,7 @@ mod tests {
                     }
                 },
                 variants: vec![Variant {
+                    id: 12345678,
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: None,
                     protein_variant_type: None,
@@ -726,6 +754,7 @@ mod tests {
                 biomarkers: Biomarkers {
                     notable_biomarkers: vec![NotableBiomarker {
                         biomarkers: vec![Biomarker {
+                            id: 12345678,
                             display_variant_type: Some(CopyNumberVariant),
                             variant_effect: Some(VariantEffect::CopyGain),
                             copy_number: Some("12.34".to_string()),
@@ -854,6 +883,7 @@ mod tests {
             },
             variants: vec![
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
@@ -868,6 +898,7 @@ mod tests {
                     oncogenic_classification_name: Some("oncogenic".to_string()),
                 },
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("KMT2C".to_string()),
                     protein_modification: Some("p.K1234fs".to_string()),
                     protein_variant_type: None,
@@ -882,6 +913,7 @@ mod tests {
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("FANCA".to_string()),
                     protein_modification: Some("p.S1234F".to_string()),
                     protein_variant_type: None,
@@ -930,6 +962,7 @@ mod tests {
             },
             variants: vec![
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("BRAF".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
@@ -944,6 +977,7 @@ mod tests {
                     oncogenic_classification_name: Some("oncogenic".to_string()),
                 },
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("KMT2C".to_string()),
                     protein_modification: Some("p.K1234fs".to_string()),
                     protein_variant_type: None,
@@ -958,6 +992,7 @@ mod tests {
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("FANCA".to_string()),
                     protein_modification: Some("p.S1234F".to_string()),
                     protein_variant_type: None,
@@ -1003,6 +1038,7 @@ mod tests {
             },
             variants: vec![
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("A1BG-AS1".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
@@ -1017,6 +1053,7 @@ mod tests {
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("APOBEC3A_B".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
@@ -1065,6 +1102,7 @@ mod tests {
             },
             variants: vec![
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("A1BG-AS1".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
@@ -1079,6 +1117,7 @@ mod tests {
                     oncogenic_classification_name: Some("oncogenic".to_string()),
                 },
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("APOBEC3A_B".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
@@ -1122,6 +1161,7 @@ mod tests {
             },
             variants: vec![
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("A1BG-AS1".to_string()),
                     protein_modification: Some("p.K1234F".to_string()),
                     protein_variant_type: None,
@@ -1136,6 +1176,7 @@ mod tests {
                     oncogenic_classification_name: Some("oncogenic".to_string()),
                 },
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("KMT2C".to_string()),
                     protein_modification: Some("p.K1234fs".to_string()),
                     protein_variant_type: Some(CopyNumberVariant),
@@ -1150,6 +1191,7 @@ mod tests {
                     oncogenic_classification_name: Some("Unclassified".to_string()),
                 },
                 Variant {
+                    id: 12345678,
                     gene_symbol: Some("KMT2C".to_string()),
                     protein_modification: Some("p.K1234fs".to_string()),
                     protein_variant_type: Some(CopyNumberVariant),
@@ -1168,6 +1210,73 @@ mod tests {
                 notable_biomarkers: vec![],
             },
             report_narrative: report_narrative.to_string(),
+        };
+
+        let actual = mh_guide.relevant_variants();
+
+        assert_eq!(actual.len(), expected_variants);
+    }
+
+    #[rstest]
+    #[case(Biomarkers {
+                notable_biomarkers: vec![],
+        }, 1)]
+    #[case(Biomarkers {
+                notable_biomarkers: vec![
+                    NotableBiomarker {
+                        biomarkers: vec![Biomarker {
+                            id: 12345678,
+                            display_variant_type: Some(CopyNumberVariant),
+                            variant_effect: Some(CopyGain),
+                            copy_number: Some("12.34".to_string()),
+                        }]
+                    },
+                ],
+        }, 2)]
+    fn test_add_cnv_biomarkers(#[case] biomarkers: Biomarkers, #[case] expected_variants: usize) {
+        let mh_guide = MhGuide {
+            general: General {
+                order_date: "2026-02-11".to_string(),
+                ref_genome_version: RefGenomeVersion::Hg19,
+                patient_identifier: PatientIdentifier {
+                    h_number: "H10000-26".to_string(),
+                    pid: "PID0123456".to_string(),
+                },
+            },
+            variants: vec![
+                Variant {
+                    id: 12345600,
+                    gene_symbol: Some("A1BG-AS1".to_string()),
+                    protein_modification: Some("p.K1234F".to_string()),
+                    protein_variant_type: None,
+                    display_variant_type: Some(CopyNumberVariant),
+                    chromosome: Some("chr19".to_string()),
+                    chromosome_modification: None,
+                    transcript_hgvs_modified_object: Some("c.123T>C".to_string()),
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(12.34),
+                    classification_name: None,
+                    oncogenic_classification_name: Some("oncogenic".to_string()),
+                },
+                Variant {
+                    id: 12345678,
+                    gene_symbol: Some("EGFR".to_string()),
+                    protein_modification: Some("Copy number Gain".to_string()),
+                    protein_variant_type: Some(CopyNumberVariant),
+                    display_variant_type: Some(CopyNumberVariant),
+                    chromosome: Some("chr7".to_string()),
+                    chromosome_modification: Some("Chr7:12345_54321gain".to_string()),
+                    transcript_hgvs_modified_object: None,
+                    variant_allele_frequency_in_tumor: None,
+                    db_snp: None,
+                    copy_number: Some(87.),
+                    classification_name: Some("Unclassified".to_string()),
+                    oncogenic_classification_name: Some("Unclassified".to_string()),
+                },
+            ],
+            biomarkers,
+            report_narrative: String::new(),
         };
 
         let actual = mh_guide.relevant_variants();
