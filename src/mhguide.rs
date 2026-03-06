@@ -10,6 +10,8 @@ pub(crate) struct MhGuide {
     pub(crate) general: General,
     #[serde(rename = "VARIANT_LONG_LIST")]
     variants: Vec<Variant>,
+    #[serde(rename = "BIOMARKERS")]
+    biomarkers: Biomarkers,
     #[serde(rename = "REPORT_NARRATIVE")]
     report_narrative: String,
 }
@@ -348,6 +350,26 @@ impl<'de> Deserialize<'de> for VariantType {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) enum VariantEffect {
+    CopyGain,
+    CopyLoss,
+    Other(String),
+}
+
+impl<'de> Deserialize<'de> for VariantEffect {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match Deserialize::deserialize(deserializer)? {
+            "Copy gain" => Ok(Self::CopyGain),
+            "Copy loss" => Ok(Self::CopyLoss),
+            other => Ok(Self::Other(other.to_string())),
+        }
+    }
+}
+
 impl Default for VariantType {
     fn default() -> Self {
         Self::Other("nicht angegeben".to_string())
@@ -552,9 +574,31 @@ impl FromStr for DnaChange {
     }
 }
 
+#[derive(Debug, Deserialize, PartialEq)]
+pub(crate) struct Biomarkers {
+    #[serde(rename = "NOTABLE_BIOMARKERS")]
+    notable_biomarkers: Vec<NotableBiomarker>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub(crate) struct NotableBiomarker {
+    #[serde(rename = "BIOMARKERS")]
+    biomarkers: Vec<Biomarker>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+pub(crate) struct Biomarker {
+    #[serde(rename = "DISPLAY_VARIANT_TYPE")]
+    pub(crate) display_variant_type: Option<VariantType>,
+    #[serde(rename = "VARIANT_EFFECT")]
+    pub(crate) variant_effect: Option<VariantEffect>,
+    #[serde(rename = "COPY_NUMBER")]
+    pub(crate) copy_number: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::mhguide::VariantType::{CopyNumberVariant, SimpleVariant};
+    use crate::mhguide::VariantType::{CopyNumberVariant, Other, SimpleVariant};
     use crate::mhguide::*;
     use rstest::rstest;
 
@@ -589,6 +633,15 @@ mod tests {
                     classification_name: Some("Likely benign".to_string()),
                     oncogenic_classification_name: None
                 }],
+                biomarkers: Biomarkers {
+                    notable_biomarkers: vec![NotableBiomarker {
+                        biomarkers: vec![Biomarker {
+                            display_variant_type: Some(Other("TMB".to_string())),
+                            variant_effect: None,
+                            copy_number: None,
+                        }]
+                    }]
+                },
                 report_narrative: String::new()
             }
         );
@@ -625,6 +678,15 @@ mod tests {
                     classification_name: Some("Likely benign".to_string()),
                     oncogenic_classification_name: None
                 }],
+                biomarkers: Biomarkers {
+                    notable_biomarkers: vec![NotableBiomarker {
+                        biomarkers: vec![Biomarker {
+                            display_variant_type: Some(Other("TMB".to_string())),
+                            variant_effect: None,
+                            copy_number: None,
+                        }]
+                    }]
+                },
                 report_narrative: String::new()
             }
         );
@@ -661,6 +723,15 @@ mod tests {
                     classification_name: None,
                     oncogenic_classification_name: None
                 }],
+                biomarkers: Biomarkers {
+                    notable_biomarkers: vec![NotableBiomarker {
+                        biomarkers: vec![Biomarker {
+                            display_variant_type: Some(CopyNumberVariant),
+                            variant_effect: Some(VariantEffect::CopyGain),
+                            copy_number: Some("12.34".to_string()),
+                        }]
+                    }]
+                },
                 report_narrative: String::new()
             }
         );
@@ -825,6 +896,9 @@ mod tests {
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
             ],
+            biomarkers: Biomarkers {
+                notable_biomarkers: vec![],
+            },
             report_narrative: report_narrative.to_string(),
         };
 
@@ -898,6 +972,9 @@ mod tests {
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
             ],
+            biomarkers: Biomarkers {
+                notable_biomarkers: vec![],
+            },
             report_narrative: report_narrative.to_string(),
         };
 
@@ -954,6 +1031,9 @@ mod tests {
                     oncogenic_classification_name: Some("benign".to_string()),
                 },
             ],
+            biomarkers: Biomarkers {
+                notable_biomarkers: vec![],
+            },
             report_narrative: report_narrative.to_string(),
         };
 
@@ -1013,6 +1093,9 @@ mod tests {
                     oncogenic_classification_name: Some("oncogenic".to_string()),
                 },
             ],
+            biomarkers: Biomarkers {
+                notable_biomarkers: vec![],
+            },
             report_narrative: report_narrative.to_string(),
         };
 
@@ -1081,6 +1164,9 @@ mod tests {
                     oncogenic_classification_name: Some("Unclassified".to_string()),
                 },
             ],
+            biomarkers: Biomarkers {
+                notable_biomarkers: vec![],
+            },
             report_narrative: report_narrative.to_string(),
         };
 

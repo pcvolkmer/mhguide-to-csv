@@ -88,22 +88,17 @@
         "BIOMARKERS": [
           {
             "DETECTED_VAR_ID": 12345678,
-            "DISPLAY_MODIFIED_OBJECT": "TMB-L",
-            "DISPLAY_MODIFICATION": "0.19 mut/Mb",
-            "DISPLAY_VARIANT_TYPE": "TMB",
-            "CHROMOSOMAL_VARIANT_TYPE": "TMB",
-            "VARIANT_ALLELE_FREQUENCY_IN_TUMOR": 12.34,
-            "TMB_VARIANT_COUNT_PER_MEGABASE": "0.1900",
-            "VARIANT_EFFECT": null,
-            "IS_ADDED_BY_USER": 0,
-            "MAPPING_MESSAGE": null,
-            "MAX_MAPPING_COORDINATE_SYSTEM": "s",
-            "IS_POLYMORPHISM": 0,
-            "COPY_NUMBER": null,
-            "HAS_VAF": false,
-            "HAS_GCN": false,
-            "IS_WILDTYPE": false,
-            "IS_FIRST": true
+            "DISPLAY_MODIFIED_OBJECT": "EGFR",
+            "DISPLAY_MODIFICATION": "Copy number GAIN",
+            "DISPLAY_VARIANT_TYPE": "CNA",
+            "LOCATION": null,
+            "INFRAME_STATUS": null,
+            "CHROMOSOMAL_VARIANT_TYPE": "CNA",
+            "VARIANT_ALLELE_FREQUENCY_IN_TUMOR": null,
+            "AVERAGE_BASE_CALLING_QUALITY": null,
+            "TMB_VARIANT_COUNT_PER_MEGABASE": null,
+            "VARIANT_EFFECT": "Copy gain",
+            "COPY_NUMBER": "12.34"
           }
         ],
         "APPROVED": [],
