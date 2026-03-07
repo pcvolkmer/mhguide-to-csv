@@ -22,6 +22,14 @@ pub(crate) struct Cli {
     )]
     pub(crate) oncogenic: bool,
 
+    #[arg(
+        long,
+        conflicts_with = "all_variants",
+        conflicts_with = "oncogenic",
+        help = "Entferne Artefakte aus 'REPORT_NARRATIVE'"
+    )]
+    pub(crate) no_artifacts: bool,
+
     #[arg(long, help = "Exportiere im XLSX-Format (Excel 2007-365)")]
     pub(crate) xlsx: bool,
 }

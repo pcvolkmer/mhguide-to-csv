@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else if cli.oncogenic {
         mhguide.oncogenic_variants()
     } else {
-        mhguide.relevant_variants()
+        mhguide.relevant_variants(cli.no_artifacts)
     }
     .par_iter()
     .filter(|variant| variant.gene_symbol.is_some())

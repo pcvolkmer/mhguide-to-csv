@@ -44,7 +44,7 @@ impl MhGuide {
     /// 1. Starting with a collection of oncogenic variants.
     /// 2. Adding CNA variants from Biomarkers
     /// 3. Adding variants mentioned in `REPORT_NARRATIVE` without being artifacts.
-    /// 4. Removing variants that are mentioned as "Artifacts"
+    /// 4. Removing variants that are mentioned as "Artifacts" if requested
     ///
     /// The function ensures that the resulting list is deduplicated before being returned.
     ///
@@ -58,7 +58,7 @@ impl MhGuide {
     ///     println!("{:?}", variant);
     /// }
     /// ```
-    pub(crate) fn relevant_variants(&self) -> Vec<&Variant> {
+    pub(crate) fn relevant_variants(&self, no_artifacts: bool) -> Vec<&Variant> {
         let mut result = self.oncogenic_variants();
 
         let cnv_biomarker_variant_ids = self
@@ -134,31 +134,33 @@ impl MhGuide {
                 .collect::<Vec<_>>(),
         );
 
-        result.retain(|v| {
-            !self
-                .removable_report_narrative_variants()
-                .iter()
-                .any(|(gene, modification)| {
-                    gene == &v.gene_symbol.clone().unwrap_or_default()
-                        && modification.starts_with("p.")
-                        && modification == &v.protein_modification.clone().unwrap_or_default()
-                })
-        });
+        if no_artifacts {
+            result.retain(|v| {
+                !self
+                    .removable_report_narrative_variants()
+                    .iter()
+                    .any(|(gene, modification)| {
+                        gene == &v.gene_symbol.clone().unwrap_or_default()
+                            && modification.starts_with("p.")
+                            && modification == &v.protein_modification.clone().unwrap_or_default()
+                    })
+            });
 
-        result.retain(|v| {
-            !self
-                .removable_report_narrative_variants()
-                .iter()
-                .any(|(gene, modification)| {
-                    gene == &v.gene_symbol.clone().unwrap_or_default()
-                        && modification.starts_with("c.")
-                        && modification
-                            == &v
-                                .transcript_hgvs_modified_object
-                                .clone()
-                                .unwrap_or_default()
-                })
-        });
+            result.retain(|v| {
+                !self
+                    .removable_report_narrative_variants()
+                    .iter()
+                    .any(|(gene, modification)| {
+                        gene == &v.gene_symbol.clone().unwrap_or_default()
+                            && modification.starts_with("c.")
+                            && modification
+                                == &v
+                                    .transcript_hgvs_modified_object
+                                    .clone()
+                                    .unwrap_or_default()
+                    })
+            });
+        }
 
         result.sort_by_key(|v| v.protein_modification.clone());
         result.sort_by_key(|v| v.transcript_hgvs_modified_object.clone());
@@ -934,7 +936,7 @@ mod tests {
             report_narrative: report_narrative.to_string(),
         };
 
-        let actual = mh_guide.relevant_variants();
+        let actual = mh_guide.relevant_variants(false);
 
         assert_eq!(actual.len(), expected_variants);
     }
@@ -1013,7 +1015,7 @@ mod tests {
             report_narrative: report_narrative.to_string(),
         };
 
-        let actual = mh_guide.relevant_variants();
+        let actual = mh_guide.relevant_variants(false);
 
         assert_eq!(actual.len(), expected_variants);
     }
@@ -1074,23 +1076,57 @@ mod tests {
             report_narrative: report_narrative.to_string(),
         };
 
-        let actual = mh_guide.relevant_variants();
+        let actual = mh_guide.relevant_variants(false);
 
         assert_eq!(actual.len(), expected_variants);
     }
 
     #[rstest]
-    #[case("A1BG-AS1 p.K1234F liegt auf einem Homopolymer; mögliches Artefakt", 1)]
-    #[case("A1BG-AS1 c.123T>C liegt auf einem Homopolymer; mögliches Artefakt", 1)]
+    #[case(
+        "A1BG-AS1 p.K1234F liegt auf einem Homopolymer; mögliches Artefakt",
+        false,
+        2
+    )]
+    #[case(
+        "A1BG-AS1 c.123T>C liegt auf einem Homopolymer; mögliches Artefakt",
+        false,
+        2
+    )]
     #[case(
         "A1BG-AS1 p.K1234F liegt auf einem Homopolymer; wahrscheinlich ein Artefakt",
+        false,
+        2
+    )]
+    #[case(
+        "A1BG-AS1 c.123T>C liegt auf einem Homopolymer; wahrscheinlich ein Artefakt",
+        false,
+        2
+    )]
+    #[case(
+        "A1BG-AS1 p.K1234F liegt auf einem Homopolymer; mögliches Artefakt",
+        true,
+        1
+    )]
+    #[case(
+        "A1BG-AS1 c.123T>C liegt auf einem Homopolymer; mögliches Artefakt",
+        true,
+        1
+    )]
+    #[case(
+        "A1BG-AS1 p.K1234F liegt auf einem Homopolymer; wahrscheinlich ein Artefakt",
+        true,
         1
     )]
     #[case(
         "A1BG-AS1 c.123T>C liegt auf einem Homopolymer; wahrscheinlich ein Artefakt",
+        true,
         1
     )]
-    fn test_remove_artifacts(#[case] report_narrative: &str, #[case] expected_variants: usize) {
+    fn test_remove_artifacts_if_required(
+        #[case] report_narrative: &str,
+        #[case] required: bool,
+        #[case] expected_variants: usize,
+    ) {
         let mh_guide = MhGuide {
             general: General {
                 order_date: "2026-02-11".to_string(),
@@ -1138,7 +1174,7 @@ mod tests {
             report_narrative: report_narrative.to_string(),
         };
 
-        let actual = mh_guide.relevant_variants();
+        let actual = mh_guide.relevant_variants(required);
 
         assert_eq!(actual.len(), expected_variants);
     }
@@ -1212,7 +1248,7 @@ mod tests {
             report_narrative: report_narrative.to_string(),
         };
 
-        let actual = mh_guide.relevant_variants();
+        let actual = mh_guide.relevant_variants(false);
 
         assert_eq!(actual.len(), expected_variants);
     }
@@ -1279,7 +1315,7 @@ mod tests {
             report_narrative: String::new(),
         };
 
-        let actual = mh_guide.relevant_variants();
+        let actual = mh_guide.relevant_variants(false);
 
         assert_eq!(actual.len(), expected_variants);
     }
