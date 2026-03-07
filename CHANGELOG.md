@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.8](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.7...v0.3.8) (2026-03-07)
+
+
+### Features
+
+* make artifact removing optional ([8630074](https://github.com/pcvolkmer/mhguide-to-csv/commit/8630074267e1c9c960500c8e83495a6ae2ebe33a))
+
 ## [0.3.7](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.6...v0.3.7) (2026-03-06)
 
 
