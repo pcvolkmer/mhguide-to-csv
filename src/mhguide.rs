@@ -353,6 +353,9 @@ pub(crate) struct General {
 pub(crate) enum VariantType {
     SimpleVariant(String),
     CopyNumberVariant,
+    TMB,
+    HRD,
+    MSI,
     Other(String),
 }
 
@@ -366,6 +369,9 @@ impl<'de> Deserialize<'de> for VariantType {
             "ins" => Ok(Self::SimpleVariant("ins".to_string())),
             "del" => Ok(Self::SimpleVariant("del".to_string())),
             "CNA" => Ok(Self::CopyNumberVariant),
+            "TMB" => Ok(Self::TMB),
+            "HRD" => Ok(Self::HRD),
+            "MSI" => Ok(Self::MSI),
             other => Ok(Self::Other(other.to_string())),
         }
     }
@@ -402,6 +408,9 @@ impl Display for VariantType {
         match self {
             Self::SimpleVariant(variant_type) => write!(f, "Einfache Variante ({variant_type})"),
             Self::CopyNumberVariant => write!(f, "Copy Number Variation"),
+            Self::TMB => write!(f, "Tumor Mutational Burden"),
+            Self::HRD => write!(f, "Homologous recombination deficiency"),
+            Self::MSI => write!(f, "Microsatellite Instability"),
             Self::Other(other) => write!(f, "Andere Variante ({other})"),
         }
     }
@@ -617,13 +626,17 @@ pub(crate) struct Biomarker {
     pub(crate) display_variant_type: Option<VariantType>,
     #[serde(rename = "VARIANT_EFFECT")]
     pub(crate) variant_effect: Option<VariantEffect>,
+    #[serde(rename = "TMB_VARIANT_COUNT_PER_MEGABASE")]
+    pub(crate) tmb_variant_count_per_megabase: Option<String>,
     #[serde(rename = "COPY_NUMBER")]
     pub(crate) copy_number: Option<String>,
+    #[serde(rename = "SCORE")]
+    pub(crate) score: Option<String>,
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::mhguide::VariantType::{CopyNumberVariant, Other, SimpleVariant};
+    use crate::mhguide::VariantType::{CopyNumberVariant, HRD, MSI, Other, SimpleVariant, TMB};
     use crate::mhguide::*;
     use rstest::rstest;
 
@@ -665,7 +678,9 @@ mod tests {
                             id: 12345678,
                             display_variant_type: Some(Other("TMB".to_string())),
                             variant_effect: None,
+                            tmb_variant_count_per_megabase: Some("0.1900".to_string()),
                             copy_number: None,
+                            score: None,
                         }]
                     }]
                 },
@@ -712,7 +727,9 @@ mod tests {
                             id: 12345678,
                             display_variant_type: Some(Other("TMB".to_string())),
                             variant_effect: None,
+                            tmb_variant_count_per_megabase: Some("0.1900".to_string()),
                             copy_number: None,
+                            score: None,
                         }]
                     }]
                 },
@@ -758,8 +775,10 @@ mod tests {
                         biomarkers: vec![Biomarker {
                             id: 12345678,
                             display_variant_type: Some(CopyNumberVariant),
-                            variant_effect: Some(VariantEffect::CopyGain),
+                            variant_effect: Some(CopyGain),
+                            tmb_variant_count_per_megabase: None,
                             copy_number: Some("12.34".to_string()),
+                            score: None,
                         }]
                     }]
                 },
@@ -1264,7 +1283,9 @@ mod tests {
                             id: 12345678,
                             display_variant_type: Some(CopyNumberVariant),
                             variant_effect: Some(CopyGain),
+                            tmb_variant_count_per_megabase: None,
                             copy_number: Some("12.34".to_string()),
+                            score: None,
                         }]
                     },
                 ],
@@ -1318,5 +1339,62 @@ mod tests {
         let actual = mh_guide.relevant_variants(false);
 
         assert_eq!(actual.len(), expected_variants);
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_biomarker_deserialization() {
+        static SV_MHGUIDE: &str = include_str!("../testfiles/biomarkers-mhguide.json");
+
+        let mhguide = serde_json::from_str::<MhGuide>(SV_MHGUIDE).unwrap();
+        assert_eq!(
+            mhguide,
+            MhGuide {
+                general: General {
+                    order_date: "2026-02-11".to_string(),
+                    ref_genome_version: RefGenomeVersion::Hg19,
+                    patient_identifier: PatientIdentifier {
+                        h_number: "H10000-26".to_string(),
+                        pid: "PID0123456".to_string()
+                    }
+                },
+                variants: vec![],
+                biomarkers: Biomarkers {
+                    notable_biomarkers: vec![
+                        NotableBiomarker {
+                            biomarkers: vec![Biomarker {
+                                id: 12345670,
+                                display_variant_type: Some(TMB),
+                                variant_effect: None,
+                                tmb_variant_count_per_megabase: Some("0.1900".to_string()),
+                                copy_number: None,
+                                score: None,
+                            }]
+                        },
+                        NotableBiomarker {
+                            biomarkers: vec![Biomarker {
+                                id: 12345671,
+                                display_variant_type: Some(HRD),
+                                variant_effect: None,
+                                tmb_variant_count_per_megabase: None,
+                                copy_number: None,
+                                score: Some("12.00".to_string()),
+                            }]
+                        },
+                        NotableBiomarker {
+                            biomarkers: vec![Biomarker {
+                                id: 12345672,
+                                display_variant_type: Some(MSI),
+                                variant_effect: None,
+                                tmb_variant_count_per_megabase: None,
+                                copy_number: None,
+                                score: Some("0.21".to_string()),
+                            }]
+                        }
+                    ]
+                },
+                report_narrative: String::new()
+            }
+        );
     }
 }
