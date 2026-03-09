@@ -622,6 +622,8 @@ pub(crate) struct NotableBiomarker {
 pub(crate) struct Biomarker {
     #[serde(rename = "DETECTED_VAR_ID")]
     id: u32,
+    #[serde(rename = "DISPLAY_MODIFIED_OBJECT")]
+    pub(crate) display_modified_object: Option<String>,
     #[serde(rename = "DISPLAY_VARIANT_TYPE")]
     pub(crate) display_variant_type: Option<VariantType>,
     #[serde(rename = "VARIANT_EFFECT")]
@@ -676,6 +678,7 @@ mod tests {
                     notable_biomarkers: vec![NotableBiomarker {
                         biomarkers: vec![Biomarker {
                             id: 12345678,
+                            display_modified_object: Some("TMB-L".to_string()),
                             display_variant_type: Some(Other("TMB".to_string())),
                             variant_effect: None,
                             tmb_variant_count_per_megabase: Some("0.1900".to_string()),
@@ -725,6 +728,7 @@ mod tests {
                     notable_biomarkers: vec![NotableBiomarker {
                         biomarkers: vec![Biomarker {
                             id: 12345678,
+                            display_modified_object: Some("TMB-L".to_string()),
                             display_variant_type: Some(Other("TMB".to_string())),
                             variant_effect: None,
                             tmb_variant_count_per_megabase: Some("0.1900".to_string()),
@@ -774,6 +778,7 @@ mod tests {
                     notable_biomarkers: vec![NotableBiomarker {
                         biomarkers: vec![Biomarker {
                             id: 12345678,
+                            display_modified_object: None,
                             display_variant_type: Some(CopyNumberVariant),
                             variant_effect: Some(CopyGain),
                             tmb_variant_count_per_megabase: None,
@@ -1281,6 +1286,7 @@ mod tests {
                     NotableBiomarker {
                         biomarkers: vec![Biomarker {
                             id: 12345678,
+                            display_modified_object: None,
                             display_variant_type: Some(CopyNumberVariant),
                             variant_effect: Some(CopyGain),
                             tmb_variant_count_per_megabase: None,
@@ -1364,6 +1370,7 @@ mod tests {
                         NotableBiomarker {
                             biomarkers: vec![Biomarker {
                                 id: 12345670,
+                                display_modified_object: Some("TMB-L".to_string()),
                                 display_variant_type: Some(TMB),
                                 variant_effect: None,
                                 tmb_variant_count_per_megabase: Some("0.1900".to_string()),
@@ -1374,6 +1381,7 @@ mod tests {
                         NotableBiomarker {
                             biomarkers: vec![Biomarker {
                                 id: 12345671,
+                                display_modified_object: Some("HRD-positive".to_string()),
                                 display_variant_type: Some(HRD),
                                 variant_effect: None,
                                 tmb_variant_count_per_megabase: None,
@@ -1384,6 +1392,7 @@ mod tests {
                         NotableBiomarker {
                             biomarkers: vec![Biomarker {
                                 id: 12345672,
+                                display_modified_object: Some("MS-stable".to_string()),
                                 display_variant_type: Some(MSI),
                                 variant_effect: None,
                                 tmb_variant_count_per_megabase: None,
