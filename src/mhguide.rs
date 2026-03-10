@@ -638,7 +638,7 @@ pub(crate) struct Biomarker {
 
 #[cfg(test)]
 mod tests {
-    use crate::mhguide::VariantType::{CopyNumberVariant, HRD, MSI, Other, SimpleVariant, TMB};
+    use crate::mhguide::VariantType::{CopyNumberVariant, HRD, MSI, SimpleVariant, TMB};
     use crate::mhguide::*;
     use rstest::rstest;
 
@@ -679,7 +679,7 @@ mod tests {
                         biomarkers: vec![Biomarker {
                             id: 12345678,
                             display_modified_object: Some("TMB-L".to_string()),
-                            display_variant_type: Some(Other("TMB".to_string())),
+                            display_variant_type: Some(TMB),
                             variant_effect: None,
                             tmb_variant_count_per_megabase: Some("0.1900".to_string()),
                             copy_number: None,
@@ -729,7 +729,7 @@ mod tests {
                         biomarkers: vec![Biomarker {
                             id: 12345678,
                             display_modified_object: Some("TMB-L".to_string()),
-                            display_variant_type: Some(Other("TMB".to_string())),
+                            display_variant_type: Some(TMB),
                             variant_effect: None,
                             tmb_variant_count_per_megabase: Some("0.1900".to_string()),
                             copy_number: None,
@@ -778,7 +778,7 @@ mod tests {
                     notable_biomarkers: vec![NotableBiomarker {
                         biomarkers: vec![Biomarker {
                             id: 12345678,
-                            display_modified_object: None,
+                            display_modified_object: Some("EGFR".to_string()),
                             display_variant_type: Some(CopyNumberVariant),
                             variant_effect: Some(CopyGain),
                             tmb_variant_count_per_megabase: None,
