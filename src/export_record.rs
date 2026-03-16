@@ -50,6 +50,12 @@ pub(crate) struct Record {
     total_copy_number: String,
     #[serde(rename = "Pathogenitätsklasse")]
     classification: String,
+    #[serde(rename = "HRD - Score/Ergebnis")]
+    hrd: String,
+    #[serde(rename = "MSI - Prozentwert")]
+    msi: String,
+    #[serde(rename = "TMB - Tumor Mutational Burden")]
+    tmb: String,
 }
 
 impl Record {
@@ -204,6 +210,108 @@ impl Record {
             }
             .to_string(),
             classification: variant.classification_name.clone().unwrap_or_default(),
+            hrd: String::new(),
+            msi: String::new(),
+            tmb: String::new(),
+        }
+    }
+
+    pub(crate) fn from_hrd(
+        h_number: &str,
+        ref_genome_version: &RefGenomeVersion,
+        value: f32,
+    ) -> Record {
+        Record {
+            h_nummer: h_number.to_string(),
+            ref_genome: ref_genome_version.to_string(),
+            variantenart: VariantType::HRD.to_string(),
+            gene: String::new(),
+            chromosome: String::new(),
+            ensembl_id: String::new(),
+            hgnc_id: String::new(),
+            hgnc_name: String::new(),
+            cdna: String::new(),
+            protein_orig: String::new(),
+            protein: String::new(),
+            genomic_position: String::new(),
+            start: String::new(),
+            end: String::new(),
+            ref_allele: String::new(),
+            alt_allele: String::new(),
+            allelic_frequency: String::new(),
+            dbsnp: String::new(),
+            total_copy_number: String::new(),
+            cnv_type: String::new(),
+            classification: String::new(),
+            hrd: value.to_string(),
+            msi: String::new(),
+            tmb: String::new(),
+        }
+    }
+
+    pub(crate) fn from_msi(
+        h_number: &str,
+        ref_genome_version: &RefGenomeVersion,
+        value: f32,
+    ) -> Record {
+        Record {
+            h_nummer: h_number.to_string(),
+            ref_genome: ref_genome_version.to_string(),
+            variantenart: VariantType::MSI.to_string(),
+            gene: String::new(),
+            chromosome: String::new(),
+            ensembl_id: String::new(),
+            hgnc_id: String::new(),
+            hgnc_name: String::new(),
+            cdna: String::new(),
+            protein_orig: String::new(),
+            protein: String::new(),
+            genomic_position: String::new(),
+            start: String::new(),
+            end: String::new(),
+            ref_allele: String::new(),
+            alt_allele: String::new(),
+            allelic_frequency: String::new(),
+            dbsnp: String::new(),
+            total_copy_number: String::new(),
+            cnv_type: String::new(),
+            classification: String::new(),
+            hrd: String::new(),
+            msi: (value * 100.).to_string(),
+            tmb: String::new(),
+        }
+    }
+
+    pub(crate) fn from_tmb(
+        h_number: &str,
+        ref_genome_version: &RefGenomeVersion,
+        value: f32,
+    ) -> Record {
+        Record {
+            h_nummer: h_number.to_string(),
+            ref_genome: ref_genome_version.to_string(),
+            variantenart: VariantType::TMB.to_string(),
+            gene: String::new(),
+            chromosome: String::new(),
+            ensembl_id: String::new(),
+            hgnc_id: String::new(),
+            hgnc_name: String::new(),
+            cdna: String::new(),
+            protein_orig: String::new(),
+            protein: String::new(),
+            genomic_position: String::new(),
+            start: String::new(),
+            end: String::new(),
+            ref_allele: String::new(),
+            alt_allele: String::new(),
+            allelic_frequency: String::new(),
+            dbsnp: String::new(),
+            total_copy_number: String::new(),
+            cnv_type: String::new(),
+            classification: String::new(),
+            hrd: String::new(),
+            msi: String::new(),
+            tmb: value.to_string(),
         }
     }
 }
