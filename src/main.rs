@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = cli::Cli::parse();
     let mhguide = read_file(&cli.input_file)?;
 
-    let records = if cli.all_variants {
+    let mut records = if cli.all_variants {
         mhguide.all_variants()
     } else if cli.oncogenic {
         mhguide.oncogenic_variants()
@@ -30,6 +30,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
     })
     .collect::<Vec<_>>();
+
+    if let Some(value) = mhguide.hrd_score() {
+        records.push(Record::from_hrd(
+            &mhguide.general.patient_identifier.h_number,
+            &mhguide.general.ref_genome_version,
+            value,
+        ));
+    }
+
+    if let Some(value) = mhguide.msi_score() {
+        records.push(Record::from_msi(
+            &mhguide.general.patient_identifier.h_number,
+            &mhguide.general.ref_genome_version,
+            value,
+        ));
+    }
+
+    if let Some(value) = mhguide.tmb_value() {
+        records.push(Record::from_tmb(
+            &mhguide.general.patient_identifier.h_number,
+            &mhguide.general.ref_genome_version,
+            value,
+        ));
+    }
 
     if cli.xlsx {
         return files::write_xlsx_file(&cli.input_file, &records);

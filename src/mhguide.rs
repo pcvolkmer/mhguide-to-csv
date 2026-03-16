@@ -201,6 +201,110 @@ impl MhGuide {
             .collect()
     }
 
+    /// Retrieves the Tumor Mutational Burden (TMB) value from the notable biomarkers.
+    ///
+    /// This function iterates through the notable biomarkers and their corresponding
+    /// biomarkers to find a biomarker with a `display_variant_type` equal to `VariantType::TMB`.
+    /// If a matching biomarker is found, its `TMB_VARIANT_COUNT_PER_MEGABASE` value is fetched,
+    /// parsed from a `String` to an `f32`, and returned as an `Option<f32>`.
+    ///
+    /// ### Returns
+    /// - `Some(f32)` if a valid TMB value is found and successfully parsed.
+    /// - `None` if no matching TMB variant is found, the `TMB_VARIANT_COUNT_PER_MEGABASE` is missing,
+    ///   or its value cannot be parsed into an `f32`.
+    ///
+    /// ### Example
+    /// ```rust
+    /// let tmb_value = some_instance.tmb_value();
+    /// match tmb_value {
+    ///     Some(value) => println!("TMB Value: {}", value),
+    ///     None => println!("No TMB Value found."),
+    /// }
+    /// ```
+    pub(crate) fn tmb_value(&self) -> Option<f32> {
+        for notable_biomarker in &self.biomarkers.notable_biomarkers {
+            for biomarker in &notable_biomarker.biomarkers {
+                let Some(display_variant_type) = &biomarker.display_variant_type else {
+                    return None;
+                };
+                if display_variant_type == &VariantType::TMB {
+                    let score = match biomarker.tmb_variant_count_per_megabase {
+                        Some(ref value) => value.clone(),
+                        None => String::new(),
+                    };
+                    return f32::from_str(&score).ok();
+                }
+            }
+        }
+        None
+    }
+
+    /// Retrieves the Homologous recombination deficiency (HRD) value from the notable biomarkers.
+    ///
+    /// This function iterates through the notable biomarkers and their corresponding
+    /// biomarkers to find a biomarker with a `DISPLAY_VARIANT_TYPE` equal to `VariantType::HRD`.
+    /// If a matching biomarker is found, its `SCORE` value is fetched,
+    /// parsed from a `String` to an `f32`, and returned as an `Option<f32>`.
+    ///
+    /// ### Returns
+    /// - `Some(f32)` if a valid TMB value is found and successfully parsed.
+    /// - `None` if no matching TMB variant is found, the `SCORE` is missing,
+    ///   or its value cannot be parsed into an `f32`.
+    ///
+    /// ### Example
+    /// ```rust
+    /// let hrd_score = some_instance.hrd_score();
+    /// match hrd_score {
+    ///     Some(value) => println!("HRD Score: {}", value),
+    ///     None => println!("No HRD Score found."),
+    /// }
+    /// ```
+    pub(crate) fn hrd_score(&self) -> Option<f32> {
+        self.biomarker_score_value(&VariantType::HRD)
+    }
+
+    /// Retrieves the Microsatellite Instability (MSI) value from the notable biomarkers.
+    ///
+    /// This function iterates through the notable biomarkers and their corresponding
+    /// biomarkers to find a biomarker with a `DISPLAY_VARIANT_TYPE` equal to `VariantType::MSI`.
+    /// If a matching biomarker is found, its `SCORE` value is fetched,
+    /// parsed from a `String` to an `f32`, and returned as an `Option<f32>`.
+    ///
+    /// ### Returns
+    /// - `Some(f32)` if a valid TMB value is found and successfully parsed.
+    /// - `None` if no matching TMB variant is found, the `SCORE` is missing,
+    ///   or its value cannot be parsed into an `f32`.
+    ///
+    /// ### Example
+    /// ```rust
+    /// let msi_score = some_instance.msi_score();
+    /// match msi_score {
+    ///     Some(value) => println!("MSI Score: {}", value),
+    ///     None => println!("No MSI Score found."),
+    /// }
+    /// ```
+    pub(crate) fn msi_score(&self) -> Option<f32> {
+        self.biomarker_score_value(&VariantType::MSI)
+    }
+
+    fn biomarker_score_value(&self, variant_type: &VariantType) -> Option<f32> {
+        for notable_biomarker in &self.biomarkers.notable_biomarkers {
+            for biomarker in &notable_biomarker.biomarkers {
+                let Some(display_variant_type) = &biomarker.display_variant_type else {
+                    return None;
+                };
+                if display_variant_type == variant_type {
+                    let score = match biomarker.score {
+                        Some(ref score) => score.clone(),
+                        None => String::new(),
+                    };
+                    return f32::from_str(&score).ok();
+                }
+            }
+        }
+        None
+    }
+
     fn report_narrative_simple_variants(&self) -> Vec<(String, String)> {
         let mut result = Self::find_report_narrative_simple_variants(&self.report_narrative);
         let removable = self.removable_report_narrative_variants();
@@ -1405,5 +1509,38 @@ mod tests {
                 report_narrative: String::new()
             }
         );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_extract_hrd_from_biomarkers() {
+        static MHGUIDE: &str = include_str!("../testfiles/biomarkers-mhguide.json");
+
+        let value = serde_json::from_str::<MhGuide>(MHGUIDE)
+            .unwrap()
+            .hrd_score();
+        assert_eq!(value, Some(12.0));
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_extract_msi_from_biomarkers() {
+        static MHGUIDE: &str = include_str!("../testfiles/biomarkers-mhguide.json");
+
+        let value = serde_json::from_str::<MhGuide>(MHGUIDE)
+            .unwrap()
+            .msi_score();
+        assert_eq!(value, Some(0.21));
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_extract_tmb_from_biomarkers() {
+        static MHGUIDE: &str = include_str!("../testfiles/biomarkers-mhguide.json");
+
+        let value = serde_json::from_str::<MhGuide>(MHGUIDE)
+            .unwrap()
+            .tmb_value();
+        assert_eq!(value, Some(0.19));
     }
 }
