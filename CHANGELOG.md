@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.9](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.8...v0.3.9) (2026-03-16)
+
+
+### Features
+
+* add DISPLAY_MODIFIED_OBJECT to biomarkers ([c948439](https://github.com/pcvolkmer/mhguide-to-csv/commit/c9484394c3d92e64214b1b3f7e518b792325f987))
+* add parsing of biomarkers TMB, HRD and MSI ([2b52ef5](https://github.com/pcvolkmer/mhguide-to-csv/commit/2b52ef5ca1eb01419cb857eb06c16cf3286e9ded))
+* export HRD, MSI and TMB ([#25](https://github.com/pcvolkmer/mhguide-to-csv/issues/25)) ([ebd7445](https://github.com/pcvolkmer/mhguide-to-csv/commit/ebd74459669506101f4b3b1981128d17d9029e54))
+
+
+### Bug Fixes
+
+* use TMB variant type ([e93d5ac](https://github.com/pcvolkmer/mhguide-to-csv/commit/e93d5ac5a108bfcf0bc9422fe97473f99a9e7807))
+
 ## [0.3.8](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.7...v0.3.8) (2026-03-07)
 
 
