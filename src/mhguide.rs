@@ -287,8 +287,30 @@ impl MhGuide {
         self.biomarker_score_value(&VariantType::MSI)
     }
 
+    /// Extracts a list of `Fusion` objects from the `report_narrative` text.
+    ///
+    /// This method processes the `report_narrative` by splitting its contents
+    /// into individual lines, attempting to parse each line into a `Fusion` instance,
+    /// and collecting successfully parsed `Fusion` objects into a vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<Fusion>` containing all `Fusion` objects that were successfully
+    /// parsed from the `report_narrative`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let result = instance.fusions();
+    /// for fusion in result {
+    ///     println!("{:?}", fusion);
+    /// }
+    /// ```
     pub(crate) fn fusions(&self) -> Vec<Fusion> {
-        vec![]
+        self.report_narrative
+            .split('\n')
+            .filter_map(|line| Fusion::from_str(line).ok())
+            .collect::<Vec<_>>()
     }
 
     fn biomarker_score_value(&self, variant_type: &VariantType) -> Option<f32> {
@@ -414,26 +436,24 @@ impl FromStr for Fusion {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        static INPUT: &str = "ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: -; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234";
-
-        let regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\);\sTranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+);\sStrand:\s(?<strand>[+-]);\sBreakpoint:\schr\d+:(?<transcript_position_3>\d+)/chr\d+:(?<transcript_position_5>\d+);\sSupporting\sread\spairs:\s(?<number_reported_reads>\d+)")            .map_err(|_| ())?;
+        let regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\);\sTranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+);\sStrand:\s(?<strand>[+-]);\sBreakpoint:\schr\d+:(?<transcript_position_5>\d+)/chr\d+:(?<transcript_position_3>\d+);\sSupporting\sread\spairs:\s(?<number_reported_reads>\d+)")            .map_err(|_| ())?;
 
         match regex.captures(s) {
             Some(captures) => {
                 let partner_3 = match captures.name("partner_3") {
-                    Some(value) => value.as_str(),
+                    Some(value) => value.as_str().to_owned(),
                     _ => return Err(()),
                 };
                 let partner_5 = match captures.name("partner_5") {
-                    Some(value) => value.as_str(),
+                    Some(value) => value.as_str().to_owned(),
                     _ => return Err(()),
                 };
                 let transcript_id_3 = match captures.name("transcript_id_3") {
-                    Some(value) => value.as_str(),
+                    Some(value) => value.as_str().to_owned(),
                     _ => return Err(()),
                 };
                 let transcript_id_5 = match captures.name("transcript_id_5") {
-                    Some(value) => value.as_str(),
+                    Some(value) => value.as_str().to_owned(),
                     _ => return Err(()),
                 };
                 let transcript_position_3 = match captures.name("transcript_position_3") {
@@ -459,7 +479,7 @@ impl FromStr for Fusion {
                     _ => return Err(()),
                 };
                 let strand = match captures.name("strand") {
-                    Some(value) => value.as_str(),
+                    Some(value) => value.as_str().to_owned(),
                     _ => return Err(()),
                 };
                 let number_reported_reads = match captures.name("number_reported_reads") {
@@ -471,15 +491,15 @@ impl FromStr for Fusion {
                 };
 
                 Ok(Fusion::RnaFusion {
-                    partner_3: partner_3.to_string(),
-                    partner_5: partner_5.to_string(),
-                    transcript_id_3: transcript_id_3.to_string(),
-                    transcript_id_5: transcript_id_5.to_string(),
+                    partner_3,
+                    partner_5,
+                    transcript_id_3,
+                    transcript_id_5,
                     transcript_position_3,
                     transcript_position_5,
-                    exon_id_3: exon_id_3.to_string(),
-                    exon_id_5: exon_id_5.to_string(),
-                    strand: strand.to_string(),
+                    exon_id_3,
+                    exon_id_5,
+                    strand,
                     number_reported_reads,
                 })
             }
@@ -1662,13 +1682,44 @@ mod tests {
                 partner_5: "ABCD1".to_string(),
                 transcript_id_3: "NM_012456.2".to_string(),
                 transcript_id_5: "NM_012345.4".to_string(),
-                transcript_position_3: 12345678,
-                transcript_position_5: 13456789,
+                transcript_position_3: 13456789,
+                transcript_position_5: 12345678,
                 exon_id_3: "Exon2".to_string(),
                 exon_id_5: "Exon1".to_string(),
                 strand: "-".to_string(),
                 number_reported_reads: 1234,
             }
         );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    #[allow(clippy::panic)]
+    fn test_extract_rna_fusion_from_report() {
+        static MHGUIDE: &str = include_str!("../testfiles/rnafusion-mhguide.json");
+
+        let value = serde_json::from_str::<MhGuide>(MHGUIDE).unwrap().fusions();
+        assert_eq!(value.len(), 1);
+
+        match value.first() {
+            Some(fusion) => {
+                assert_eq!(
+                    fusion,
+                    &RnaFusion {
+                        partner_3: "ABCD2".to_string(),
+                        partner_5: "ABCD1".to_string(),
+                        transcript_id_3: "NM_012456.2".to_string(),
+                        transcript_id_5: "NM_012345.4".to_string(),
+                        transcript_position_3: 13456789,
+                        transcript_position_5: 12345678,
+                        exon_id_3: "Exon2".to_string(),
+                        exon_id_5: "Exon1".to_string(),
+                        strand: "-".to_string(),
+                        number_reported_reads: 1234,
+                    }
+                );
+            }
+            _ => panic!("No RNA fusion found"),
+        };
     }
 }
