@@ -287,6 +287,32 @@ impl MhGuide {
         self.biomarker_score_value(&VariantType::MSI)
     }
 
+    /// Extracts a list of `Fusion` objects from the `report_narrative` text.
+    ///
+    /// This method processes the `report_narrative` by splitting its contents
+    /// into individual lines, attempting to parse each line into a `Fusion` instance,
+    /// and collecting successfully parsed `Fusion` objects into a vector.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<Fusion>` containing all `Fusion` objects that were successfully
+    /// parsed from the `report_narrative`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let result = instance.fusions();
+    /// for fusion in result {
+    ///     println!("{:?}", fusion);
+    /// }
+    /// ```
+    pub(crate) fn fusions(&self) -> Vec<Fusion> {
+        self.report_narrative
+            .split('\n')
+            .filter_map(|line| Fusion::from_str(line).ok())
+            .collect::<Vec<_>>()
+    }
+
     fn biomarker_score_value(&self, variant_type: &VariantType) -> Option<f32> {
         for notable_biomarker in &self.biomarkers.notable_biomarkers {
             for biomarker in &notable_biomarker.biomarkers {
@@ -391,6 +417,98 @@ impl MhGuide {
 }
 
 #[derive(Debug, PartialEq)]
+pub(crate) enum Fusion {
+    RnaFusion {
+        partner_3: String,
+        partner_5: String,
+        transcript_id_3: String,
+        transcript_id_5: String,
+        transcript_position_3: u32,
+        transcript_position_5: u32,
+        exon_id_3: String,
+        exon_id_5: String,
+        strand: String,
+        number_reported_reads: u32,
+    },
+}
+
+impl FromStr for Fusion {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\);\sTranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+);\sStrand:\s(?<strand>[+-]);\sBreakpoint:\schr\d+:(?<transcript_position_5>\d+)/chr\d+:(?<transcript_position_3>\d+);\sSupporting\sread\spairs:\s(?<number_reported_reads>\d+)")            .map_err(|_| ())?;
+
+        match regex.captures(s) {
+            Some(captures) => {
+                let partner_3 = match captures.name("partner_3") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+                let partner_5 = match captures.name("partner_5") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+                let transcript_id_3 = match captures.name("transcript_id_3") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+                let transcript_id_5 = match captures.name("transcript_id_5") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+                let transcript_position_3 = match captures.name("transcript_position_3") {
+                    Some(value) => match value.as_str().parse::<u32>() {
+                        Ok(value) => value,
+                        Err(_) => return Err(()),
+                    },
+                    _ => return Err(()),
+                };
+                let transcript_position_5 = match captures.name("transcript_position_5") {
+                    Some(value) => match value.as_str().parse::<u32>() {
+                        Ok(value) => value,
+                        Err(_) => return Err(()),
+                    },
+                    _ => return Err(()),
+                };
+                let exon_id_3 = match captures.name("exon_3") {
+                    Some(value) => format!("Exon{}", value.as_str()),
+                    _ => return Err(()),
+                };
+                let exon_id_5 = match captures.name("exon_5") {
+                    Some(value) => format!("Exon{}", value.as_str()),
+                    _ => return Err(()),
+                };
+                let strand = match captures.name("strand") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+                let number_reported_reads = match captures.name("number_reported_reads") {
+                    Some(value) => match value.as_str().parse::<u32>() {
+                        Ok(value) => value,
+                        _ => return Err(()),
+                    },
+                    _ => return Err(()),
+                };
+
+                Ok(Fusion::RnaFusion {
+                    partner_3,
+                    partner_5,
+                    transcript_id_3,
+                    transcript_id_5,
+                    transcript_position_3,
+                    transcript_position_5,
+                    exon_id_3,
+                    exon_id_5,
+                    strand,
+                    number_reported_reads,
+                })
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub(crate) enum RefGenomeVersion {
     Hg19,
     Hg38,
@@ -457,6 +575,8 @@ pub(crate) struct General {
 pub(crate) enum VariantType {
     SimpleVariant(String),
     CopyNumberVariant,
+    DnaFusion,
+    RnaFusion,
     TMB,
     HRD,
     MSI,
@@ -473,6 +593,8 @@ impl<'de> Deserialize<'de> for VariantType {
             "ins" => Ok(Self::SimpleVariant("ins".to_string())),
             "del" => Ok(Self::SimpleVariant("del".to_string())),
             "CNA" => Ok(Self::CopyNumberVariant),
+            "DNA fusion" => Ok(Self::DnaFusion),
+            "RNA fusion" => Ok(Self::RnaFusion),
             "TMB" => Ok(Self::TMB),
             "HRD" => Ok(Self::HRD),
             "MSI" => Ok(Self::MSI),
@@ -512,6 +634,8 @@ impl Display for VariantType {
         match self {
             Self::SimpleVariant(variant_type) => write!(f, "Einfache Variante ({variant_type})"),
             Self::CopyNumberVariant => write!(f, "Copy Number Variation"),
+            Self::DnaFusion => write!(f, "DNA Fusion"),
+            Self::RnaFusion => write!(f, "RNA Fusion"),
             Self::TMB => write!(f, "Tumor Mutational Burden"),
             Self::HRD => write!(f, "Homologous recombination deficiency"),
             Self::MSI => write!(f, "Microsatellite Instability"),
@@ -742,6 +866,7 @@ pub(crate) struct Biomarker {
 
 #[cfg(test)]
 mod tests {
+    use crate::mhguide::Fusion::RnaFusion;
     use crate::mhguide::VariantType::{CopyNumberVariant, HRD, MSI, SimpleVariant, TMB};
     use crate::mhguide::*;
     use rstest::rstest;
@@ -1542,5 +1667,59 @@ mod tests {
             .unwrap()
             .tmb_value();
         assert_eq!(value, Some(0.19));
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_extract_rna_fusion_from_string() {
+        static INPUT: &str = "ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: -; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234";
+
+        let value = Fusion::from_str(INPUT).unwrap();
+        assert_eq!(
+            value,
+            RnaFusion {
+                partner_3: "ABCD2".to_string(),
+                partner_5: "ABCD1".to_string(),
+                transcript_id_3: "NM_012456.2".to_string(),
+                transcript_id_5: "NM_012345.4".to_string(),
+                transcript_position_3: 13456789,
+                transcript_position_5: 12345678,
+                exon_id_3: "Exon2".to_string(),
+                exon_id_5: "Exon1".to_string(),
+                strand: "-".to_string(),
+                number_reported_reads: 1234,
+            }
+        );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    #[allow(clippy::panic)]
+    fn test_extract_rna_fusion_from_report() {
+        static MHGUIDE: &str = include_str!("../testfiles/rnafusion-mhguide.json");
+
+        let value = serde_json::from_str::<MhGuide>(MHGUIDE).unwrap().fusions();
+        assert_eq!(value.len(), 1);
+
+        match value.first() {
+            Some(fusion) => {
+                assert_eq!(
+                    fusion,
+                    &RnaFusion {
+                        partner_3: "ABCD2".to_string(),
+                        partner_5: "ABCD1".to_string(),
+                        transcript_id_3: "NM_012456.2".to_string(),
+                        transcript_id_5: "NM_012345.4".to_string(),
+                        transcript_position_3: 13456789,
+                        transcript_position_5: 12345678,
+                        exon_id_3: "Exon2".to_string(),
+                        exon_id_5: "Exon1".to_string(),
+                        strand: "-".to_string(),
+                        number_reported_reads: 1234,
+                    }
+                );
+            }
+            _ => panic!("No RNA fusion found"),
+        };
     }
 }
