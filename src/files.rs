@@ -1,6 +1,7 @@
-use crate::export_record::Record;
+use crate::export_record::{BiomarkerRecord, CopyNumberRecord, SimpleVariantRecord};
 use crate::mhguide::MhGuide;
 use rust_xlsxwriter::{Format, Workbook};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::Path;
@@ -39,16 +40,39 @@ pub(crate) fn read_file(path: &Path) -> Result<MhGuide, Box<dyn std::error::Erro
 
 pub(crate) fn write_csv_file(
     path: &Path,
-    records: &Vec<Record>,
+    simple_variant_records: &Vec<SimpleVariantRecord>,
+    copy_number_records: &Vec<CopyNumberRecord>,
+    biomarker_records: &Vec<BiomarkerRecord>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut writer = csv::WriterBuilder::new()
-        .has_headers(true)
+        .has_headers(false)
+        .flexible(true)
         .escape(b'"')
         .delimiter(b';')
         .from_writer(vec![]);
 
-    for record in records {
-        let _ = writer.serialize(record);
+    if !simple_variant_records.is_empty() {
+        let _ = writer.serialize(SimpleVariantRecord::csv_headlines());
+        for record in simple_variant_records {
+            let _ = writer.serialize(record);
+        }
+        let _ = writer.serialize(vec![""]);
+    }
+
+    if !copy_number_records.is_empty() {
+        let _ = writer.serialize(CopyNumberRecord::csv_headlines());
+        for record in copy_number_records {
+            let _ = writer.serialize(record);
+        }
+        let _ = writer.serialize(vec![""]);
+    }
+
+    if !biomarker_records.is_empty() {
+        let _ = writer.serialize(BiomarkerRecord::csv_headlines());
+        for record in biomarker_records {
+            let _ = writer.serialize(record);
+        }
+        let _ = writer.serialize(vec![""]);
     }
 
     let mut output_file = path.to_path_buf();
@@ -59,16 +83,42 @@ pub(crate) fn write_csv_file(
 
 pub(crate) fn write_xlsx_file(
     path: &Path,
-    records: &Vec<Record>,
+    simple_variant_records: &Vec<SimpleVariantRecord>,
+    copy_number_records: &Vec<CopyNumberRecord>,
+    biomarker_records: &Vec<BiomarkerRecord>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    fn write_worksheet<T>(
+        workbook: &mut Workbook,
+        name: &str,
+        records: &[T],
+    ) -> Result<(), Box<dyn std::error::Error>>
+    where
+        T: Serialize + for<'de> Deserialize<'de>,
+    {
+        let worksheet = workbook.add_worksheet();
+        worksheet.set_name(name)?;
+
+        worksheet.deserialize_headers_with_format::<T>(0, 0, &Format::new().set_bold())?;
+        worksheet.serialize(&records)?;
+
+        worksheet.autofit();
+
+        Ok(())
+    }
+
     let mut workbook = Workbook::new();
-    let worksheet = workbook.add_worksheet();
-    worksheet.set_name("Variants")?;
 
-    worksheet.deserialize_headers_with_format::<Record>(0, 0, &Format::new().set_bold())?;
-    worksheet.serialize(&records)?;
+    if !simple_variant_records.is_empty() {
+        write_worksheet(&mut workbook, "Einfache Varianten", simple_variant_records)?;
+    }
 
-    worksheet.autofit();
+    if !copy_number_records.is_empty() {
+        write_worksheet(&mut workbook, "Copy Number Varianten", copy_number_records)?;
+    }
+
+    if !biomarker_records.is_empty() {
+        write_worksheet(&mut workbook, "Biomarker", biomarker_records)?;
+    }
 
     let mut output_file = path.to_path_buf();
     output_file.set_extension("xlsx");
