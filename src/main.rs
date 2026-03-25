@@ -1,6 +1,6 @@
 use crate::export_record::{BiomarkerRecord, CopyNumberRecord, SimpleVariantRecord};
 use crate::files::read_file;
-use crate::mhguide::VariantType;
+use crate::mhguide::ResultType;
 use clap::Parser;
 use rayon::prelude::*;
 
@@ -26,11 +26,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .par_iter()
         .filter(|variant| variant.gene_symbol.is_some())
         .filter(|variant| match &variant.display_variant_type {
-            Some(VariantType::SimpleVariant(_)) => true,
+            Some(ResultType::SimpleVariant(_)) => true,
             Some(_) => false,
             None => matches!(
                 &variant.protein_variant_type,
-                Some(VariantType::SimpleVariant(_))
+                Some(ResultType::SimpleVariant(_))
             ),
         })
         .map(|variant| {
@@ -46,11 +46,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .par_iter()
         .filter(|variant| variant.gene_symbol.is_some())
         .filter(|variant| match &variant.display_variant_type {
-            Some(VariantType::CopyNumberVariant) => true,
+            Some(ResultType::CopyNumberVariant) => true,
             Some(_) => false,
             None => matches!(
                 &variant.protein_variant_type,
-                Some(VariantType::CopyNumberVariant)
+                Some(ResultType::CopyNumberVariant)
             ),
         })
         .map(|variant| {

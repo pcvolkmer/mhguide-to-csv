@@ -1,6 +1,6 @@
 use crate::hgnc::Genes;
 use crate::mhguide;
-use crate::mhguide::{RefGenomeVersion, VariantType, three_letter_protein_modification};
+use crate::mhguide::{RefGenomeVersion, ResultType, three_letter_protein_modification};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
@@ -102,7 +102,7 @@ impl SimpleVariantRecord {
                 Some(variant_type) => variant_type.to_string(),
                 None => match &variant.protein_variant_type {
                     Some(variant_type) => variant_type.to_string(),
-                    None => VariantType::default().to_string(),
+                    None => ResultType::default().to_string(),
                 },
             },
             gene: variant.gene_symbol.clone().unwrap_or_default(),
@@ -276,7 +276,7 @@ impl CopyNumberRecord {
                 Some(variant_type) => variant_type.to_string(),
                 None => match &variant.protein_variant_type {
                     Some(variant_type) => variant_type.to_string(),
-                    None => VariantType::default().to_string(),
+                    None => ResultType::default().to_string(),
                 },
             },
             gene: variant.gene_symbol.clone().unwrap_or_default(),
@@ -355,7 +355,7 @@ impl BiomarkerRecord {
         BiomarkerRecord {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
-            ergebnis: VariantType::HRD.to_string(),
+            ergebnis: ResultType::HRD.to_string(),
             hrd: format!("{value:.2}").replace('.', ","),
             msi: String::new(),
             tmb: String::new(),
@@ -370,7 +370,7 @@ impl BiomarkerRecord {
         BiomarkerRecord {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
-            ergebnis: VariantType::MSI.to_string(),
+            ergebnis: ResultType::MSI.to_string(),
             hrd: String::new(),
             msi: format!("{value:.2}").replace('.', ","),
             tmb: String::new(),
@@ -385,7 +385,7 @@ impl BiomarkerRecord {
         BiomarkerRecord {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
-            ergebnis: VariantType::TMB.to_string(),
+            ergebnis: ResultType::TMB.to_string(),
             hrd: String::new(),
             msi: String::new(),
             tmb: format!("{value:.2}").replace('.', ","),

@@ -73,7 +73,7 @@ impl MhGuide {
         result.extend(
             self.variants
                 .par_iter()
-                .filter(|v| matches!(v.display_variant_type, Some(VariantType::CopyNumberVariant)))
+                .filter(|v| matches!(v.display_variant_type, Some(ResultType::CopyNumberVariant)))
                 .filter(|v| cnv_biomarker_variant_ids.contains(&v.id))
                 .collect::<Vec<_>>(),
         );
@@ -123,7 +123,7 @@ impl MhGuide {
                         .iter()
                         .any(|(gene, gnc)| {
                             gene.clone() == v.gene_symbol.clone().unwrap_or_default()
-                                && protein_variant_type == &VariantType::CopyNumberVariant
+                                && protein_variant_type == &ResultType::CopyNumberVariant
                                 && match v.copy_number {
                                     Some(copy_number) => copy_number.eq(gnc),
                                     None => false,
@@ -227,7 +227,7 @@ impl MhGuide {
                 let Some(display_variant_type) = &biomarker.display_variant_type else {
                     return None;
                 };
-                if display_variant_type == &VariantType::TMB {
+                if display_variant_type == &ResultType::TMB {
                     let score = match biomarker.tmb_variant_count_per_megabase {
                         Some(ref value) => value.clone(),
                         None => String::new(),
@@ -260,7 +260,7 @@ impl MhGuide {
     /// }
     /// ```
     pub(crate) fn hrd_score(&self) -> Option<f32> {
-        self.biomarker_score_value(&VariantType::HRD)
+        self.biomarker_score_value(&ResultType::HRD)
     }
 
     /// Retrieves the Microsatellite Instability (MSI) value from the notable biomarkers.
@@ -284,7 +284,7 @@ impl MhGuide {
     /// }
     /// ```
     pub(crate) fn msi_score(&self) -> Option<f32> {
-        self.biomarker_score_value(&VariantType::MSI)
+        self.biomarker_score_value(&ResultType::MSI)
     }
 
     /// Extracts a list of `Fusion` objects from the `report_narrative` text.
@@ -313,7 +313,7 @@ impl MhGuide {
             .collect::<Vec<_>>()
     }
 
-    fn biomarker_score_value(&self, variant_type: &VariantType) -> Option<f32> {
+    fn biomarker_score_value(&self, variant_type: &ResultType) -> Option<f32> {
         for notable_biomarker in &self.biomarkers.notable_biomarkers {
             for biomarker in &notable_biomarker.biomarkers {
                 let Some(display_variant_type) = &biomarker.display_variant_type else {
@@ -572,7 +572,7 @@ pub(crate) struct General {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum VariantType {
+pub(crate) enum ResultType {
     SimpleVariant(String),
     CopyNumberVariant,
     DnaFusion,
@@ -583,7 +583,7 @@ pub(crate) enum VariantType {
     Other(String),
 }
 
-impl<'de> Deserialize<'de> for VariantType {
+impl<'de> Deserialize<'de> for ResultType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -623,23 +623,23 @@ impl<'de> Deserialize<'de> for VariantEffect {
     }
 }
 
-impl Default for VariantType {
+impl Default for ResultType {
     fn default() -> Self {
         Self::Other("nicht angegeben".to_string())
     }
 }
 
-impl Display for VariantType {
+impl Display for ResultType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::SimpleVariant(variant_type) => write!(f, "Einfache Variante ({variant_type})"),
             Self::CopyNumberVariant => write!(f, "Copy Number Variation"),
             Self::DnaFusion => write!(f, "DNA Fusion"),
             Self::RnaFusion => write!(f, "RNA Fusion"),
-            Self::TMB => write!(f, "Tumor Mutational Burden"),
-            Self::HRD => write!(f, "Homologous recombination deficiency"),
-            Self::MSI => write!(f, "Microsatellite Instability"),
-            Self::Other(other) => write!(f, "Andere Variante ({other})"),
+            Self::TMB => write!(f, "TMB"),
+            Self::HRD => write!(f, "HRD"),
+            Self::MSI => write!(f, "MSI/MMR"),
+            Self::Other(other) => write!(f, "Anderes Ergebnis ({other})"),
         }
     }
 }
@@ -653,9 +653,9 @@ pub(crate) struct Variant {
     #[serde(rename = "PROTEIN_MODIFICATION")]
     pub(crate) protein_modification: Option<String>,
     #[serde(rename = "PROTEIN_VARIANT_TYPE")]
-    pub(crate) protein_variant_type: Option<VariantType>,
+    pub(crate) protein_variant_type: Option<ResultType>,
     #[serde(rename = "DISPLAY_VARIANT_TYPE")]
-    pub(crate) display_variant_type: Option<VariantType>,
+    pub(crate) display_variant_type: Option<ResultType>,
     #[serde(rename = "CHROMOSOMAL_MODIFIED_OBJECT")]
     pub(crate) chromosome: Option<String>,
     #[serde(rename = "CHROMOSOMAL_MODIFICATION")]
@@ -853,7 +853,7 @@ pub(crate) struct Biomarker {
     #[serde(rename = "DISPLAY_MODIFIED_OBJECT")]
     pub(crate) display_modified_object: Option<String>,
     #[serde(rename = "DISPLAY_VARIANT_TYPE")]
-    pub(crate) display_variant_type: Option<VariantType>,
+    pub(crate) display_variant_type: Option<ResultType>,
     #[serde(rename = "VARIANT_EFFECT")]
     pub(crate) variant_effect: Option<VariantEffect>,
     #[serde(rename = "TMB_VARIANT_COUNT_PER_MEGABASE")]
@@ -867,7 +867,7 @@ pub(crate) struct Biomarker {
 #[cfg(test)]
 mod tests {
     use crate::mhguide::Fusion::RnaFusion;
-    use crate::mhguide::VariantType::{CopyNumberVariant, HRD, MSI, SimpleVariant, TMB};
+    use crate::mhguide::ResultType::{CopyNumberVariant, HRD, MSI, SimpleVariant, TMB};
     use crate::mhguide::*;
     use rstest::rstest;
 
