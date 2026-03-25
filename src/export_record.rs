@@ -367,12 +367,14 @@ impl BiomarkerRecord {
         ref_genome_version: &RefGenomeVersion,
         value: f32,
     ) -> BiomarkerRecord {
+        let value = value * 100.0;
+
         BiomarkerRecord {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
             ergebnis: ResultType::MSI.to_string(),
             hrd: String::new(),
-            msi: format!("{value:.2}").replace('.', ","),
+            msi: format!("{value}"),
             tmb: String::new(),
         }
     }
