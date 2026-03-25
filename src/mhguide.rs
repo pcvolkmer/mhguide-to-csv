@@ -432,6 +432,16 @@ pub(crate) enum Fusion {
     },
 }
 
+impl Display for Fusion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Fusion::RnaFusion { .. } => {
+                write!(f, "RNA Fusion")
+            }
+        }
+    }
+}
+
 impl FromStr for Fusion {
     type Err = ();
 
