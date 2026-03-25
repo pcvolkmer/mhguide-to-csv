@@ -40,10 +40,10 @@ pub(crate) fn read_file(path: &Path) -> Result<MhGuide, Box<dyn std::error::Erro
 
 pub(crate) fn write_csv_file(
     path: &Path,
-    simple_variant_records: &Vec<SimpleVariantRecord>,
-    copy_number_records: &Vec<CopyNumberRecord>,
-    fusion_records: &Vec<FusionRecord>,
-    biomarker_records: &Vec<BiomarkerRecord>,
+    simple_variant_records: &[SimpleVariantRecord],
+    copy_number_records: &[CopyNumberRecord],
+    fusion_records: &[FusionRecord],
+    biomarker_records: &[BiomarkerRecord],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut writer = csv::WriterBuilder::new()
         .has_headers(false)
@@ -92,10 +92,10 @@ pub(crate) fn write_csv_file(
 
 pub(crate) fn write_xlsx_file(
     path: &Path,
-    simple_variant_records: &Vec<SimpleVariantRecord>,
-    copy_number_records: &Vec<CopyNumberRecord>,
-    fusion_records: &Vec<FusionRecord>,
-    biomarker_records: &Vec<BiomarkerRecord>,
+    simple_variant_records: &[SimpleVariantRecord],
+    copy_number_records: &[CopyNumberRecord],
+    fusion_records: &[FusionRecord],
+    biomarker_records: &[BiomarkerRecord],
 ) -> Result<(), Box<dyn std::error::Error>> {
     fn write_worksheet<T>(
         workbook: &mut Workbook,
