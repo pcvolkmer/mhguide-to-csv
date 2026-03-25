@@ -90,9 +90,8 @@ impl Record {
     /// # Examples
     ///
     /// ```rust
-    /// let ref_genome_version = RefGenomeVersion::new("GRCh38");
     /// let variant = mhguide::Variant::new();
-    /// let record = Record::from_variant("H12345", &ref_genome_version, &variant);
+    /// let record = Record::from_variant("H12345", &RefGenomeVersion::HG38, &variant);
     /// println!("{:?}", record);
     /// ```
     pub(crate) fn from_variant(
@@ -180,7 +179,7 @@ impl Record {
             ref_allele: dna_change.ref_allele,
             alt_allele: dna_change.alt_allele,
             allelic_frequency: match variant.variant_allele_frequency_in_tumor {
-                Some(value) => format!("{value:.2}"),
+                Some(value) => format!("{value:.2}").replace('.', ","),
                 None => String::new(),
             },
             dbsnp: variant.db_snp.clone().unwrap_or_default(),
@@ -243,7 +242,7 @@ impl Record {
             total_copy_number: String::new(),
             cnv_type: String::new(),
             classification: String::new(),
-            hrd: value.to_string(),
+            hrd: format!("{value:.2}").replace('.', ","),
             msi: String::new(),
             tmb: String::new(),
         }
@@ -277,7 +276,7 @@ impl Record {
             cnv_type: String::new(),
             classification: String::new(),
             hrd: String::new(),
-            msi: (value * 100.).to_string(),
+            msi: format!("{value:.2}").replace('.', ","),
             tmb: String::new(),
         }
     }
@@ -311,7 +310,7 @@ impl Record {
             classification: String::new(),
             hrd: String::new(),
             msi: String::new(),
-            tmb: value.to_string(),
+            tmb: format!("{value:.2}").replace('.', ","),
         }
     }
 }

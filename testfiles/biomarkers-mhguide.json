@@ -119,7 +119,7 @@
             "DISPLAY_VARIANT_TYPE": "MSI",
             "CHROMOSOMAL_VARIANT_TYPE": "MSI",
             "VARIANT_ALLELE_FREQUENCY_IN_TUMOR": null,
-            "AVERAGE_BASE_CALLING_QUALITY": "0.21",
+            "AVERAGE_BASE_CALLING_QUALITY": "0.2100000000000000",
             "VARIANT_EFFECT": null,
             "IS_ADDED_BY_USER": 0,
             "MAPPING_MESSAGE": null,
