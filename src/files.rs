@@ -3,15 +3,15 @@ use crate::mhguide::MhGuide;
 use rust_xlsxwriter::{Format, Workbook};
 use std::fs;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::Path;
 
-fn read_json_content(path: &PathBuf) -> Result<String, Box<dyn std::error::Error>> {
+fn read_json_content(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
     match path.extension() {
         Some(ext) if ext == "json" => Ok(fs::read_to_string(path)?),
         Some(ext) if ext == "zip" => {
             let mut archive = zip::ZipArchive::new(fs::File::open(path)?)?;
             if archive.len() != 1
-                || !std::path::Path::new(archive.by_index(0)?.name())
+                || !Path::new(archive.by_index(0)?.name())
                     .extension()
                     .is_some_and(|ext| ext.eq_ignore_ascii_case("json"))
             {
@@ -32,13 +32,13 @@ fn read_json_content(path: &PathBuf) -> Result<String, Box<dyn std::error::Error
     }
 }
 
-pub(crate) fn read_file(path: &PathBuf) -> Result<MhGuide, Box<dyn std::error::Error>> {
+pub(crate) fn read_file(path: &Path) -> Result<MhGuide, Box<dyn std::error::Error>> {
     let json = read_json_content(path)?;
     Ok(serde_json::from_str::<MhGuide>(&json)?)
 }
 
 pub(crate) fn write_csv_file(
-    path: &PathBuf,
+    path: &Path,
     records: &Vec<Record>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut writer = csv::WriterBuilder::new()
@@ -51,14 +51,14 @@ pub(crate) fn write_csv_file(
         let _ = writer.serialize(record);
     }
 
-    let mut output_file = path.clone();
+    let mut output_file = path.to_path_buf();
     output_file.set_extension("csv");
 
     fs::write(output_file, writer.into_inner()?).map_err(Into::into)
 }
 
 pub(crate) fn write_xlsx_file(
-    path: &PathBuf,
+    path: &Path,
     records: &Vec<Record>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut workbook = Workbook::new();
@@ -70,7 +70,7 @@ pub(crate) fn write_xlsx_file(
 
     worksheet.autofit();
 
-    let mut output_file = path.clone();
+    let mut output_file = path.to_path_buf();
     output_file.set_extension("xlsx");
     workbook.save(output_file).map_err(Into::into)
 }
