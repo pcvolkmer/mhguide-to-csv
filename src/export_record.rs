@@ -6,14 +6,14 @@ use std::sync::LazyLock;
 
 static GENES: LazyLock<Genes> = LazyLock::new(Genes::new);
 
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Record {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub(crate) struct SimpleVariantRecord {
     #[serde(rename = "H-Nummer")]
     h_nummer: String,
     #[serde(rename = "Referenz-Genom")]
     ref_genome: String,
     #[serde(rename = "Ergebnis")]
-    variantenart: String,
+    ergebnis: String,
     #[serde(rename = "Gen")]
     gene: String,
     #[serde(rename = "Genomposition (g.)")]
@@ -44,24 +44,14 @@ pub(crate) struct Record {
     allelic_frequency: String,
     #[serde(rename = "dbSNP ID")]
     dbsnp: String,
-    #[serde(rename = "Type")]
-    cnv_type: String,
-    #[serde(rename = "Total CN")]
-    total_copy_number: String,
     #[serde(rename = "Pathogenitätsklasse")]
     classification: String,
-    #[serde(rename = "HRD - Score/Ergebnis")]
-    hrd: String,
-    #[serde(rename = "MSI - Prozentwert")]
-    msi: String,
-    #[serde(rename = "TMB - Tumor Mutational Burden")]
-    tmb: String,
 }
 
-impl Record {
-    /// Constructs a `Record` from the input variant details.
+impl SimpleVariantRecord {
+    /// Constructs a `SimpleVariantRecord` from the input variant details.
     ///
-    /// This function generates a `Record` by extracting and transforming information
+    /// This function generates a `SimpleVariantRecord` by extracting and transforming information
     /// from the provided variant, genomic reference version, and H-number (identifier).
     ///
     /// # Arguments
@@ -72,18 +62,15 @@ impl Record {
     ///
     /// # Returns
     ///
-    /// * `Record` - An instance of the `Record` struct populated with various variant details,
+    /// * `SimpleVariantRecord` - An instance of the `SimpleVariantRecord` struct populated with various variant details,
     /// including gene information, genomic changes, protein modifications, and various metadata.
     ///
     /// # Behavior
     ///
     /// * Identifies the corresponding gene based on the variant's gene symbol, falling back
     ///   to previous symbols if necessary.
-    /// * Determines the type of variant (e.g., "Copy Number Variation" or "Einfache Variante").
     /// * Converts raw DNA and protein modifications into standardized representations.
     /// * Extracts genomic position, allelic information, and variant-specific frequencies.
-    /// * Classifies copy number variations (CNVs) as 'loss', 'low level gain', or 'high level gain',
-    ///   depending on variant data.
     /// * Retrieves additional metadata such as gene identifiers and database references
     ///   from `hgnc::Genes`.
     ///
@@ -91,14 +78,14 @@ impl Record {
     ///
     /// ```rust
     /// let variant = mhguide::Variant::new();
-    /// let record = Record::from_variant("H12345", &RefGenomeVersion::HG38, &variant);
+    /// let record = SimpleVariantRecord::from_variant("H12345", &RefGenomeVersion::HG38, &variant);
     /// println!("{:?}", record);
     /// ```
     pub(crate) fn from_variant(
         h_number: &str,
         ref_genome_version: &RefGenomeVersion,
         variant: &mhguide::Variant,
-    ) -> Record {
+    ) -> SimpleVariantRecord {
         let gene = match GENES.find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default()) {
             Some(gene) => gene,
             None => GENES
@@ -108,10 +95,10 @@ impl Record {
 
         let dna_change = variant.dna_change();
 
-        Record {
+        SimpleVariantRecord {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
-            variantenart: match &variant.display_variant_type {
+            ergebnis: match &variant.display_variant_type {
                 Some(variant_type) => variant_type.to_string(),
                 None => match &variant.protein_variant_type {
                     Some(variant_type) => variant_type.to_string(),
@@ -183,6 +170,120 @@ impl Record {
                 None => String::new(),
             },
             dbsnp: variant.db_snp.clone().unwrap_or_default(),
+            classification: variant.classification_name.clone().unwrap_or_default(),
+        }
+    }
+
+    pub(crate) fn csv_headlines() -> Vec<String> {
+        vec![
+            "H-Nummer".to_string(),
+            "Referenz-Genom".to_string(),
+            "Ergebnis".to_string(),
+            "Gen".to_string(),
+            "Genomposition (g.)".to_string(),
+            "cDNA Nomenklatur (c.)".to_string(),
+            "Proteinebene (original)".to_string(),
+            "Proteinebene Nomenklatur (p.)".to_string(),
+            "Chromosom".to_string(),
+            "EnsemblID".to_string(),
+            "HGNC ID".to_string(),
+            "HGNC Name".to_string(),
+            "Start".to_string(),
+            "Ende".to_string(),
+            "Alternative Nucleotide".to_string(),
+            "Reference Nucleotide".to_string(),
+            "Allelfrequenz (%)".to_string(),
+            "dbSNP ID".to_string(),
+            "Pathogenitätsklasse".to_string(),
+        ]
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub(crate) struct CopyNumberRecord {
+    #[serde(rename = "H-Nummer")]
+    h_nummer: String,
+    #[serde(rename = "Referenz-Genom")]
+    ref_genome: String,
+    #[serde(rename = "Ergebnis")]
+    ergebnis: String,
+    #[serde(rename = "Type")]
+    cnv_type: String,
+    #[serde(rename = "Gen")]
+    gene: String,
+    #[serde(rename = "Chromosom")]
+    chromosome: String,
+    #[serde(rename = "EnsemblID")]
+    ensembl_id: String,
+    #[serde(rename = "HGNC ID")]
+    hgnc_id: String,
+    #[serde(rename = "HGNC Name")]
+    hgnc_name: String,
+    #[serde(rename = "Total CN")]
+    total_copy_number: String,
+    #[serde(rename = "Pathogenitätsklasse")]
+    classification: String,
+}
+
+impl CopyNumberRecord {
+    /// Constructs a `CopyNumberRecord` from the input variant details.
+    ///
+    /// This function generates a `CopyNumberRecord` by extracting and transforming information
+    /// from the provided variant, genomic reference version, and H-number (identifier).
+    ///
+    /// # Arguments
+    ///
+    /// * `h_number` - A reference to the H-number string, which serves as an identifier.
+    /// * `ref_genome_version` - The reference genome version.
+    /// * `variant` - A reference to a `mhguide::Variant` object which provides variant information.
+    ///
+    /// # Returns
+    ///
+    /// * `CopyNumberRecord` - An instance of the `CopyNumberRecord` struct populated with related details.
+    ///
+    /// # Behavior
+    ///
+    /// * Identifies the corresponding gene based on the variant's gene symbol, falling back
+    ///   to previous symbols if necessary.
+    /// * Classifies copy number variations (CNVs) as 'loss', 'low level gain', or 'high level gain',
+    ///   depending on variant data.
+    /// * Retrieves additional metadata such as gene identifiers and database references
+    ///   from `hgnc::Genes`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let variant = mhguide::Variant::new();
+    /// let record = CopyNumberRecord::from_variant("H12345", &RefGenomeVersion::HG38, &variant);
+    /// println!("{:?}", record);
+    /// ```
+    pub(crate) fn from_variant(
+        h_number: &str,
+        ref_genome_version: &RefGenomeVersion,
+        variant: &mhguide::Variant,
+    ) -> CopyNumberRecord {
+        let gene = match GENES.find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default()) {
+            Some(gene) => gene,
+            None => GENES
+                .find_by_previous_symbol(&variant.gene_symbol.clone().unwrap_or_default())
+                .unwrap_or_default(),
+        };
+
+        CopyNumberRecord {
+            h_nummer: h_number.to_string(),
+            ref_genome: ref_genome_version.to_string(),
+            ergebnis: match &variant.display_variant_type {
+                Some(variant_type) => variant_type.to_string(),
+                None => match &variant.protein_variant_type {
+                    Some(variant_type) => variant_type.to_string(),
+                    None => VariantType::default().to_string(),
+                },
+            },
+            gene: variant.gene_symbol.clone().unwrap_or_default(),
+            chromosome: variant.chromosome.clone().unwrap_or_default(),
+            ensembl_id: gene.ensembl_id.unwrap_or_default(),
+            hgnc_id: gene.hgnc_id,
+            hgnc_name: gene.name,
             total_copy_number: match variant.copy_number {
                 Some(value) => format!("{value:.2}"),
                 None => String::new(),
@@ -209,39 +310,52 @@ impl Record {
             }
             .to_string(),
             classification: variant.classification_name.clone().unwrap_or_default(),
-            hrd: String::new(),
-            msi: String::new(),
-            tmb: String::new(),
         }
     }
 
+    pub(crate) fn csv_headlines() -> Vec<String> {
+        vec![
+            "H-Nummer".to_string(),
+            "Referenz-Genom".to_string(),
+            "Ergebnis".to_string(),
+            "Type".to_string(),
+            "Gen".to_string(),
+            "Chromosom".to_string(),
+            "EnsemblID".to_string(),
+            "HGNC ID".to_string(),
+            "HGNC Name".to_string(),
+            "Total CN".to_string(),
+            "Pathogenitätsklasse".to_string(),
+        ]
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct BiomarkerRecord {
+    #[serde(rename = "H-Nummer")]
+    h_nummer: String,
+    #[serde(rename = "Referenz-Genom")]
+    ref_genome: String,
+    #[serde(rename = "Ergebnis")]
+    ergebnis: String,
+    #[serde(rename = "HRD - Score/Ergebnis")]
+    hrd: String,
+    #[serde(rename = "MSI - Prozentwert")]
+    msi: String,
+    #[serde(rename = "TMB - Tumor Mutational Burden")]
+    tmb: String,
+}
+
+impl BiomarkerRecord {
     pub(crate) fn from_hrd(
         h_number: &str,
         ref_genome_version: &RefGenomeVersion,
         value: f32,
-    ) -> Record {
-        Record {
+    ) -> BiomarkerRecord {
+        BiomarkerRecord {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
-            variantenart: VariantType::HRD.to_string(),
-            gene: String::new(),
-            chromosome: String::new(),
-            ensembl_id: String::new(),
-            hgnc_id: String::new(),
-            hgnc_name: String::new(),
-            cdna: String::new(),
-            protein_orig: String::new(),
-            protein: String::new(),
-            genomic_position: String::new(),
-            start: String::new(),
-            end: String::new(),
-            ref_allele: String::new(),
-            alt_allele: String::new(),
-            allelic_frequency: String::new(),
-            dbsnp: String::new(),
-            total_copy_number: String::new(),
-            cnv_type: String::new(),
-            classification: String::new(),
+            ergebnis: VariantType::HRD.to_string(),
             hrd: format!("{value:.2}").replace('.', ","),
             msi: String::new(),
             tmb: String::new(),
@@ -252,29 +366,11 @@ impl Record {
         h_number: &str,
         ref_genome_version: &RefGenomeVersion,
         value: f32,
-    ) -> Record {
-        Record {
+    ) -> BiomarkerRecord {
+        BiomarkerRecord {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
-            variantenart: VariantType::MSI.to_string(),
-            gene: String::new(),
-            chromosome: String::new(),
-            ensembl_id: String::new(),
-            hgnc_id: String::new(),
-            hgnc_name: String::new(),
-            cdna: String::new(),
-            protein_orig: String::new(),
-            protein: String::new(),
-            genomic_position: String::new(),
-            start: String::new(),
-            end: String::new(),
-            ref_allele: String::new(),
-            alt_allele: String::new(),
-            allelic_frequency: String::new(),
-            dbsnp: String::new(),
-            total_copy_number: String::new(),
-            cnv_type: String::new(),
-            classification: String::new(),
+            ergebnis: VariantType::MSI.to_string(),
             hrd: String::new(),
             msi: format!("{value:.2}").replace('.', ","),
             tmb: String::new(),
@@ -285,32 +381,25 @@ impl Record {
         h_number: &str,
         ref_genome_version: &RefGenomeVersion,
         value: f32,
-    ) -> Record {
-        Record {
+    ) -> BiomarkerRecord {
+        BiomarkerRecord {
             h_nummer: h_number.to_string(),
             ref_genome: ref_genome_version.to_string(),
-            variantenart: VariantType::TMB.to_string(),
-            gene: String::new(),
-            chromosome: String::new(),
-            ensembl_id: String::new(),
-            hgnc_id: String::new(),
-            hgnc_name: String::new(),
-            cdna: String::new(),
-            protein_orig: String::new(),
-            protein: String::new(),
-            genomic_position: String::new(),
-            start: String::new(),
-            end: String::new(),
-            ref_allele: String::new(),
-            alt_allele: String::new(),
-            allelic_frequency: String::new(),
-            dbsnp: String::new(),
-            total_copy_number: String::new(),
-            cnv_type: String::new(),
-            classification: String::new(),
+            ergebnis: VariantType::TMB.to_string(),
             hrd: String::new(),
             msi: String::new(),
             tmb: format!("{value:.2}").replace('.', ","),
         }
+    }
+
+    pub(crate) fn csv_headlines() -> Vec<String> {
+        vec![
+            "H-Nummer".to_string(),
+            "Referenz-Genom".to_string(),
+            "Ergebnis".to_string(),
+            "HRD - Score/Ergebnis".to_string(),
+            "MSI - Prozentwert".to_string(),
+            "TMB - Tumor Mutational Burden".to_string(),
+        ]
     }
 }

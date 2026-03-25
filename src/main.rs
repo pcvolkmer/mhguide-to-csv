@@ -1,5 +1,6 @@
-use crate::export_record::Record;
+use crate::export_record::{BiomarkerRecord, CopyNumberRecord, SimpleVariantRecord};
 use crate::files::read_file;
+use crate::mhguide::VariantType;
 use clap::Parser;
 use rayon::prelude::*;
 
@@ -13,42 +14,71 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = cli::Cli::parse();
     let mhguide = read_file(&cli.input_file)?;
 
-    let mut records = if cli.all_variants {
+    let variants = if cli.all_variants {
         mhguide.all_variants()
     } else if cli.oncogenic {
         mhguide.oncogenic_variants()
     } else {
         mhguide.relevant_variants(cli.no_artifacts)
-    }
-    .par_iter()
-    .filter(|variant| variant.gene_symbol.is_some())
-    .map(|variant| {
-        Record::from_variant(
-            &mhguide.general.patient_identifier.h_number,
-            &mhguide.general.ref_genome_version,
-            variant,
-        )
-    })
-    .collect::<Vec<_>>();
+    };
 
+    let simple_variant_records = variants
+        .par_iter()
+        .filter(|variant| variant.gene_symbol.is_some())
+        .filter(|variant| match &variant.display_variant_type {
+            Some(VariantType::SimpleVariant(_)) => true,
+            Some(_) => false,
+            None => matches!(
+                &variant.protein_variant_type,
+                Some(VariantType::SimpleVariant(_))
+            ),
+        })
+        .map(|variant| {
+            SimpleVariantRecord::from_variant(
+                &mhguide.general.patient_identifier.h_number,
+                &mhguide.general.ref_genome_version,
+                variant,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let copy_number_records = variants
+        .par_iter()
+        .filter(|variant| variant.gene_symbol.is_some())
+        .filter(|variant| match &variant.display_variant_type {
+            Some(VariantType::CopyNumberVariant) => true,
+            Some(_) => false,
+            None => matches!(
+                &variant.protein_variant_type,
+                Some(VariantType::CopyNumberVariant)
+            ),
+        })
+        .map(|variant| {
+            CopyNumberRecord::from_variant(
+                &mhguide.general.patient_identifier.h_number,
+                &mhguide.general.ref_genome_version,
+                variant,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let mut biomarker_records = vec![];
     if let Some(value) = mhguide.hrd_score() {
-        records.push(Record::from_hrd(
+        biomarker_records.push(BiomarkerRecord::from_hrd(
             &mhguide.general.patient_identifier.h_number,
             &mhguide.general.ref_genome_version,
             value,
         ));
     }
-
     if let Some(value) = mhguide.msi_score() {
-        records.push(Record::from_msi(
+        biomarker_records.push(BiomarkerRecord::from_msi(
             &mhguide.general.patient_identifier.h_number,
             &mhguide.general.ref_genome_version,
             value,
         ));
     }
-
     if let Some(value) = mhguide.tmb_value() {
-        records.push(Record::from_tmb(
+        biomarker_records.push(BiomarkerRecord::from_tmb(
             &mhguide.general.patient_identifier.h_number,
             &mhguide.general.ref_genome_version,
             value,
@@ -56,8 +86,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if cli.xlsx {
-        return files::write_xlsx_file(&cli.input_file, &records);
+        return files::write_xlsx_file(
+            &cli.input_file,
+            &simple_variant_records,
+            &copy_number_records,
+            &biomarker_records,
+        );
     }
 
-    files::write_csv_file(&cli.input_file, &records)
+    files::write_csv_file(
+        &cli.input_file,
+        &simple_variant_records,
+        &copy_number_records,
+        &biomarker_records,
+    )
 }
