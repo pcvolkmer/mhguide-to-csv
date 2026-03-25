@@ -1,4 +1,4 @@
-use crate::export_record::{BiomarkerRecord, CopyNumberRecord, SimpleVariantRecord};
+use crate::export_record::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use crate::mhguide::MhGuide;
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
@@ -42,6 +42,7 @@ pub(crate) fn write_csv_file(
     path: &Path,
     simple_variant_records: &Vec<SimpleVariantRecord>,
     copy_number_records: &Vec<CopyNumberRecord>,
+    fusion_records: &Vec<FusionRecord>,
     biomarker_records: &Vec<BiomarkerRecord>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut writer = csv::WriterBuilder::new()
@@ -67,6 +68,14 @@ pub(crate) fn write_csv_file(
         let _ = writer.serialize(vec![""]);
     }
 
+    if !fusion_records.is_empty() {
+        let _ = writer.serialize(FusionRecord::csv_headlines());
+        for record in copy_number_records {
+            let _ = writer.serialize(record);
+        }
+        let _ = writer.serialize(vec![""]);
+    }
+
     if !biomarker_records.is_empty() {
         let _ = writer.serialize(BiomarkerRecord::csv_headlines());
         for record in biomarker_records {
@@ -85,6 +94,7 @@ pub(crate) fn write_xlsx_file(
     path: &Path,
     simple_variant_records: &Vec<SimpleVariantRecord>,
     copy_number_records: &Vec<CopyNumberRecord>,
+    fusion_records: &Vec<FusionRecord>,
     biomarker_records: &Vec<BiomarkerRecord>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     fn write_worksheet<T>(
@@ -114,6 +124,10 @@ pub(crate) fn write_xlsx_file(
 
     if !copy_number_records.is_empty() {
         write_worksheet(&mut workbook, "Copy Number Varianten", copy_number_records)?;
+    }
+
+    if !fusion_records.is_empty() {
+        write_worksheet(&mut workbook, "Fusionen", fusion_records)?;
     }
 
     if !biomarker_records.is_empty() {

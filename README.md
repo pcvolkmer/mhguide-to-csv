@@ -35,6 +35,43 @@ Um nur Varianten mit '(Likely) oncogenic' zu verwenden, dann kann dies mit `--on
 Mit der Option `--no-artifacts` werden alle Varianten, die als Artefakte gekennzeichnet sind, aus der Liste entfernt.
 Dies ist nur möglich, wenn keine der folgenden Optionen verwendet wird: `--all-variants` oder `--oncogenic`.
 
+### RNA Fusionen
+
+RNA Fusionen werden exportiert, wenn die Angaben in der JSON-Datei unter `REPORT_NARRATIVE` vorhanden sind.
+Hierbei ist das Format einzuhalten:
+
+* Jede Fusion wird in einer neuen Zeile gelistet.
+* Jede Teilangabe der Fusion wird durch ein Semikolon getrennt.
+
+Beispiel:
+`ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: -; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234`
+
+Daraus werden folgende Angaben exportiert:
+
+| Feld                           | Wert                                      |
+|--------------------------------|-------------------------------------------|
+| H-Nummer                       | ...                                       | 
+| Referenz-Genom                 | ...                                       | 
+| Ergebnis                       | RNA Fusion                                | 
+| Gen                            | ABCD1                                     | 
+| Fusioniertes Gen               | ABCD2                                     | 
+| 5' Partner EnsemblID           | ENSG00000101986                           | 
+| 5' Partner HGNC ID             | HGNC:61                                   | 
+| 5' Partner HGNC Name           | ATP binding cassette subfamily D member 1 | 
+| 5' Partner Transcript ID       | NM_012345.4                               | 
+| 5' Partner Exon ID             | Exon1                                     | 
+| 5' Partner Transcript Position | 12345678                                  | 
+| 5' Partner Strand              | -                                         | 
+| 3' Partner EnsemblID           | ENSG00000173208                           | 
+| 3' Partner HGNC ID             | HGNC:66                                   | 
+| 3' Partner HGNC Name           | ATP binding cassette subfamily D member 2 | 
+| 3' Partner Transcript ID       | NM_012456.2                               | 
+| 3' Partner Exon ID             | Exon2                                     | 
+| 3' Partner Transcript Position | 13456789                                  | 
+| 3' Partner Strand              | -                                         | 
+| Number reported reads          | 1234                                      | 
+| Pathogenitätsklasse            |                                           | 
+
 ## Enthaltene Liste mit Genen
 
 Es ist eine Liste mit rund 45000 Genen

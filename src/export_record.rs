@@ -1,6 +1,6 @@
-use crate::hgnc::Genes;
+use crate::hgnc::{Gene, Genes};
 use crate::mhguide;
-use crate::mhguide::{RefGenomeVersion, ResultType, three_letter_protein_modification};
+use crate::mhguide::{Fusion, RefGenomeVersion, ResultType, three_letter_protein_modification};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
@@ -325,6 +325,162 @@ impl CopyNumberRecord {
             "HGNC ID".to_string(),
             "HGNC Name".to_string(),
             "Total CN".to_string(),
+            "Pathogenitätsklasse".to_string(),
+        ]
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub(crate) struct FusionRecord {
+    #[serde(rename = "H-Nummer")]
+    h_nummer: String,
+    #[serde(rename = "Referenz-Genom")]
+    ref_genome: String,
+    #[serde(rename = "Ergebnis")]
+    ergebnis: String,
+    #[serde(rename = "Gen")]
+    gene: String,
+    #[serde(rename = "Fusioniertes Gen")]
+    fusion_gene: String,
+
+    #[serde(rename = "5' Partner EnsemblID")]
+    ensembl_id_5: String,
+    #[serde(rename = "5' Partner HGNC ID")]
+    hgnc_id_5: String,
+    #[serde(rename = "5' Partner HGNC Name")]
+    hgnc_name_5: String,
+    #[serde(rename = "5' Partner Transcript ID")]
+    transcript_id_5: String,
+    #[serde(rename = "5' Partner Exon ID")]
+    exon_id_5: String,
+    #[serde(rename = "5' Partner Transcript Position")]
+    transcript_position_5: String,
+    #[serde(rename = "5' Partner Strand")]
+    strand_5: String,
+
+    #[serde(rename = "3' Partner EnsemblID")]
+    ensembl_id_3: String,
+    #[serde(rename = "3' Partner HGNC ID")]
+    hgnc_id_3: String,
+    #[serde(rename = "3' Partner HGNC Name")]
+    hgnc_name_3: String,
+    #[serde(rename = "3' Partner Transcript ID")]
+    transcript_id_3: String,
+    #[serde(rename = "3' Partner Exon ID")]
+    exon_id_3: String,
+    #[serde(rename = "3' Partner Transcript Position")]
+    transcript_position_3: String,
+    #[serde(rename = "3' Partner Strand")]
+    strand_3: String,
+
+    #[serde(rename = "Number reported reads")]
+    number_reported_reads: String,
+    #[serde(rename = "Pathogenitätsklasse")]
+    classification: String,
+}
+
+impl FusionRecord {
+    /// Constructs a `FusionRecord` from the input variant details.
+    ///
+    /// This function generates a `FusionRecord` by extracting and transforming information
+    /// from the provided variant.
+    ///
+    /// # Arguments
+    ///
+    /// * `h_number` - A reference to the H-number string, which serves as an identifier.
+    /// * `ref_genome_version` - The reference genome version.
+    /// * `fusion` - A reference to a `mhguide::Fusion` object which provides variant information.
+    ///
+    /// # Returns
+    ///
+    /// * `FusionRecord` - An instance of the `FusionRecord` struct populated with related details.
+    ///
+    /// # Behavior
+    ///
+    /// * Identifies the corresponding gene based on the variant's gene symbol, falling back
+    ///   to previous symbols if necessary.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let variant = mhguide::Variant::new();
+    /// let record = FusionRecord::from_variant("H12345", &RefGenomeVersion::HG38, &variant);
+    /// println!("{:?}", record);
+    /// ```
+    pub(crate) fn from_fusion(
+        h_number: &str,
+        ref_genome_version: &RefGenomeVersion,
+        fusion: &Fusion,
+    ) -> FusionRecord {
+        fn gene(symbol_name: &str) -> Gene {
+            match GENES.find_by_symbol(symbol_name) {
+                Some(gene) => gene,
+                None => GENES
+                    .find_by_previous_symbol(symbol_name)
+                    .unwrap_or_default(),
+            }
+        }
+
+        match fusion {
+            Fusion::RnaFusion {
+                partner_3,
+                partner_5,
+                transcript_id_3,
+                transcript_id_5,
+                transcript_position_3,
+                transcript_position_5,
+                exon_id_3,
+                exon_id_5,
+                strand,
+                number_reported_reads,
+            } => FusionRecord {
+                h_nummer: h_number.to_string(),
+                ref_genome: ref_genome_version.to_string(),
+                ergebnis: fusion.to_string(),
+                gene: partner_5.clone(),
+                fusion_gene: partner_3.clone(),
+                ensembl_id_5: gene(partner_5).ensembl_id.unwrap_or_default(),
+                hgnc_id_5: gene(partner_5).hgnc_id,
+                hgnc_name_5: gene(partner_5).name,
+                transcript_id_5: transcript_id_5.to_string(),
+                exon_id_5: exon_id_5.to_string(),
+                transcript_position_5: transcript_position_5.to_string(),
+                strand_5: strand.to_string(),
+                ensembl_id_3: gene(partner_3).ensembl_id.unwrap_or_default(),
+                hgnc_id_3: gene(partner_3).hgnc_id,
+                hgnc_name_3: gene(partner_3).name,
+                transcript_id_3: transcript_id_3.to_string(),
+                exon_id_3: exon_id_3.to_string(),
+                transcript_position_3: transcript_position_3.to_string(),
+                strand_3: strand.to_string(),
+                number_reported_reads: number_reported_reads.to_string(),
+                classification: String::new(),
+            },
+        }
+    }
+
+    pub(crate) fn csv_headlines() -> Vec<String> {
+        vec![
+            "H-Nummer".to_string(),
+            "Referenz-Genom".to_string(),
+            "Ergebnis".to_string(),
+            "Gen".to_string(),
+            "Fusioniertes Gen".to_string(),
+            "5' Partner EnsemblID".to_string(),
+            "5' Partner HGNC ID".to_string(),
+            "5' Partner HGNC Name".to_string(),
+            "5' Partner Transcript ID".to_string(),
+            "5' Partner Exon ID".to_string(),
+            "5' Partner Transcript Position".to_string(),
+            "5' Partner Strand".to_string(),
+            "3' Partner EnsemblID".to_string(),
+            "3' Partner HGNC ID".to_string(),
+            "3' Partner HGNC Name".to_string(),
+            "3' Partner Transcript ID".to_string(),
+            "3' Partner Exon ID".to_string(),
+            "3' Partner Transcript Position".to_string(),
+            "3' Partner Strand".to_string(),
+            "Number reported reads".to_string(),
             "Pathogenitätsklasse".to_string(),
         ]
     }

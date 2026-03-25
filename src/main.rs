@@ -1,4 +1,4 @@
-use crate::export_record::{BiomarkerRecord, CopyNumberRecord, SimpleVariantRecord};
+use crate::export_record::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use crate::files::read_file;
 use crate::mhguide::ResultType;
 use clap::Parser;
@@ -62,6 +62,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect::<Vec<_>>();
 
+    let fusion_records = mhguide
+        .fusions()
+        .par_iter()
+        .map(|fusion| {
+            FusionRecord::from_fusion(
+                &mhguide.general.patient_identifier.h_number,
+                &mhguide.general.ref_genome_version,
+                fusion,
+            )
+        })
+        .collect::<Vec<_>>();
+
     let mut biomarker_records = vec![];
     if let Some(value) = mhguide.hrd_score() {
         biomarker_records.push(BiomarkerRecord::from_hrd(
@@ -90,6 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &cli.input_file,
             &simple_variant_records,
             &copy_number_records,
+            &fusion_records,
             &biomarker_records,
         );
     }
@@ -98,6 +111,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &cli.input_file,
         &simple_variant_records,
         &copy_number_records,
+        &fusion_records,
         &biomarker_records,
     )
 }
