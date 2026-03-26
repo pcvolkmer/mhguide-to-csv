@@ -1,6 +1,6 @@
 [package]
 name = "mhguide-to-csv"
-version = "0.3.9"
+version = "0.4.0"
 edition = "2024"
 authors = ["Paul-Christian Volkmer"]
 description = "Application convert MH-Guide files into readable CSV files"

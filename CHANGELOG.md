@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.9...v0.4.0) (2026-03-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* split records in multiple parts ([#28](https://github.com/pcvolkmer/mhguide-to-csv/issues/28))
+
+### Features
+
+* convert msi value to % ([8b2bfde](https://github.com/pcvolkmer/mhguide-to-csv/commit/8b2bfde6586808f45d007f7afb190d8a86e9d910))
+* export RNA fusions ([#29](https://github.com/pcvolkmer/mhguide-to-csv/issues/29)) ([bfc2d7a](https://github.com/pcvolkmer/mhguide-to-csv/commit/bfc2d7acfc3db4feb806610b7944d435bd097d3e))
+* parse RNA fusions from string input ([#26](https://github.com/pcvolkmer/mhguide-to-csv/issues/26)) ([8720f9f](https://github.com/pcvolkmer/mhguide-to-csv/commit/8720f9f15d16023e1388dab3a8f369df93c2444f))
+* split records in multiple parts ([#28](https://github.com/pcvolkmer/mhguide-to-csv/issues/28)) ([51727f2](https://github.com/pcvolkmer/mhguide-to-csv/commit/51727f2f0b70eabfec6b8105dbadecc8bdd3b2ac))
+
+
+### Bug Fixes
+
+* biomarkers format to use comma-separated decimals ([00a3700](https://github.com/pcvolkmer/mhguide-to-csv/commit/00a3700bc22a101d83a1cda833ae6f918c3f1fb6))
+* use msi score value as is ([837bdae](https://github.com/pcvolkmer/mhguide-to-csv/commit/837bdae2e8d345bb491eff1374803e69ea422981))
+
 ## [0.3.9](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.8...v0.3.9) (2026-03-16)
 
 
