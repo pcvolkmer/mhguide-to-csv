@@ -6,7 +6,7 @@ use rayon::prelude::*;
 
 mod cli;
 mod export_record;
-pub mod files;
+mod files;
 mod hgnc;
 mod mhguide;
 
