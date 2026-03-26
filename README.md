@@ -35,6 +35,14 @@ Um nur Varianten mit '(Likely) oncogenic' zu verwenden, dann kann dies mit `--on
 Mit der Option `--no-artifacts` werden alle Varianten, die als Artefakte gekennzeichnet sind, aus der Liste entfernt.
 Dies ist nur möglich, wenn keine der folgenden Optionen verwendet wird: `--all-variants` oder `--oncogenic`.
 
+### Weitere Einfache und Copy Number Varianten
+
+Wird in der JSON-Datei unter `REPORT_NARRATIVE` eine Angabe zu weiteren SV und CNV gemacht, so werden diese auch in der
+CSV-Datei exportiert, sofern eine passende Variante in der JSON-Datei vorhanden ist
+
+* jedoch nicht als `(Likely) oncogenic` annotiert ist (diese werden in der Regel immer exportiert - siehe auch `--no-artifacts`)
+* und die Option `--oncogenic` nicht verwendet wurde.
+
 ### RNA Fusionen
 
 RNA Fusionen werden exportiert, wenn die Angaben in der JSON-Datei unter `REPORT_NARRATIVE` vorhanden sind.
