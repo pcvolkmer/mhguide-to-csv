@@ -107,6 +107,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    if cli.json {
+        return files::write_json_file(
+            &cli.input_file,
+            &simple_variant_records,
+            &copy_number_records,
+            &fusion_records,
+            &biomarker_records,
+        );
+    }
+
     files::write_csv_file(
         &cli.input_file,
         &simple_variant_records,

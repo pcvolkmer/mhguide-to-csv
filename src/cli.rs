@@ -30,6 +30,17 @@ pub(crate) struct Cli {
     )]
     pub(crate) no_artifacts: bool,
 
-    #[arg(long, help = "Exportiere im XLSX-Format (Excel 2007-365)")]
+    #[arg(
+        long,
+        conflicts_with = "json",
+        help = "Exportiere im XLSX-Format (Excel 2007-365)"
+    )]
     pub(crate) xlsx: bool,
+
+    #[arg(
+        long,
+        conflicts_with = "xlsx",
+        help = "Exportiere JSON gemäß DNPM-Datenmodell 2.1"
+    )]
+    pub(crate) json: bool,
 }
