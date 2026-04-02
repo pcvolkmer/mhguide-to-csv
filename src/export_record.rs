@@ -40,6 +40,8 @@ pub(crate) struct SimpleVariantRecord {
     alt_allele: String,
     #[serde(rename = "Reference Nucleotide")]
     ref_allele: String,
+    #[serde(rename = "Read-Depth")]
+    read_depth: String,
     #[serde(rename = "Allelfrequenz (%)")]
     allelic_frequency: String,
     #[serde(rename = "dbSNP ID")]
@@ -165,6 +167,10 @@ impl SimpleVariantRecord {
             end: dna_change.end,
             ref_allele: dna_change.ref_allele,
             alt_allele: dna_change.alt_allele,
+            read_depth: match variant.total_reads_in_tumor {
+                Some(value) => value.to_string(),
+                None => String::new(),
+            },
             allelic_frequency: match variant.variant_allele_frequency_in_tumor {
                 Some(value) => format!("{value:.2}").replace('.', ","),
                 None => String::new(),
@@ -192,6 +198,7 @@ impl SimpleVariantRecord {
             "Ende".to_string(),
             "Alternative Nucleotide".to_string(),
             "Reference Nucleotide".to_string(),
+            "Read-Depth".to_string(),
             "Allelfrequenz (%)".to_string(),
             "dbSNP ID".to_string(),
             "Pathogenitätsklasse".to_string(),
