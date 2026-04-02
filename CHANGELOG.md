@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.4.0...v0.4.1) (2026-04-02)
+
+
+### Features
+
+* export in DNPM 2.1 JSON format ([#30](https://github.com/pcvolkmer/mhguide-to-csv/issues/30)) ([ce3f95e](https://github.com/pcvolkmer/mhguide-to-csv/commit/ce3f95eedf2fea5148dfada738207df00044a32e))
+* export read depth for simple variants ([#31](https://github.com/pcvolkmer/mhguide-to-csv/issues/31)) ([aab6022](https://github.com/pcvolkmer/mhguide-to-csv/commit/aab6022e86c9e4ba80c810c283e79a081b80cb83))
+
 ## [0.4.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.3.9...v0.4.0) (2026-03-26)
 
 
