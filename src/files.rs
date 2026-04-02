@@ -221,7 +221,7 @@ pub(crate) fn write_json_file(
             } else {
                 Some(record.protein.clone())
             },
-            read_depth: 0, // To be interpreted as "not present"
+            read_depth: record.read_depth.parse().unwrap_or(0), // To be interpreted as "not present"
             ref_allele: if record.ref_allele.is_empty() {
                 "-".to_string()
             } else {

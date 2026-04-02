@@ -41,7 +41,7 @@ pub(crate) struct SimpleVariantRecord {
     #[serde(rename = "Reference Nucleotide")]
     pub(crate) ref_allele: String,
     #[serde(rename = "Read-Depth")]
-    read_depth: String,
+    pub(crate) read_depth: String,
     #[serde(rename = "Allelfrequenz (%)")]
     pub(crate) allelic_frequency: String,
     #[serde(rename = "dbSNP ID")]
