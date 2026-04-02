@@ -1,10 +1,46 @@
 use crate::export_record::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use crate::mhguide::MhGuide;
+use itertools::Itertools;
+use mv64e_mtb_dto::{
+    Chromosome, Cnv, CnvCoding, CnvCodingCode, Coding, NgsReportResults, Position, Reference, Snv,
+    TranscriptId, TranscriptIdSystem,
+};
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::Path;
+use std::str::FromStr;
+
+fn map_chromosome(s: &str) -> Result<Chromosome, ()> {
+    match s {
+        "chr1" => Ok(Chromosome::Chr1),
+        "chr2" => Ok(Chromosome::Chr2),
+        "chr3" => Ok(Chromosome::Chr3),
+        "chr4" => Ok(Chromosome::Chr4),
+        "chr5" => Ok(Chromosome::Chr5),
+        "chr6" => Ok(Chromosome::Chr6),
+        "chr7" => Ok(Chromosome::Chr7),
+        "chr8" => Ok(Chromosome::Chr8),
+        "chr9" => Ok(Chromosome::Chr9),
+        "chr10" => Ok(Chromosome::Chr10),
+        "chr11" => Ok(Chromosome::Chr11),
+        "chr12" => Ok(Chromosome::Chr12),
+        "chr13" => Ok(Chromosome::Chr13),
+        "chr14" => Ok(Chromosome::Chr14),
+        "chr15" => Ok(Chromosome::Chr15),
+        "chr16" => Ok(Chromosome::Chr16),
+        "chr17" => Ok(Chromosome::Chr17),
+        "chr18" => Ok(Chromosome::Chr18),
+        "chr19" => Ok(Chromosome::Chr19),
+        "chr20" => Ok(Chromosome::Chr20),
+        "chr21" => Ok(Chromosome::Chr21),
+        "chr22" => Ok(Chromosome::Chr22),
+        "chrX" => Ok(Chromosome::ChrX),
+        "chrY" => Ok(Chromosome::ChrY),
+        _ => Err(()),
+    }
+}
 
 fn read_json_content(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
     match path.extension() {
@@ -137,6 +173,138 @@ pub(crate) fn write_xlsx_file(
     let mut output_file = path.to_path_buf();
     output_file.set_extension("xlsx");
     workbook.save(output_file).map_err(Into::into)
+}
+
+pub(crate) fn write_json_file(
+    path: &Path,
+    simple_variant_records: &[SimpleVariantRecord],
+    copy_number_records: &[CopyNumberRecord],
+    fusion_records: &[FusionRecord],
+    biomarker_records: &[BiomarkerRecord],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let simple_variants = simple_variant_records
+        .iter()
+        .map(|record| Snv {
+            allelic_frequency: f64::from_str(&record.allelic_frequency.replace(',', "."))
+                .unwrap_or(0.0),
+            alt_allele: if record.alt_allele.is_empty() {
+                "-".to_string()
+            } else {
+                record.alt_allele.clone()
+            },
+            // Use Chromosome::ChrMt as placeholder for non present value
+            chromosome: map_chromosome(&record.chromosome).unwrap_or(Chromosome::ChrMt),
+            dna_change: record.cdna.clone(),
+            exon_id: None,
+            external_ids: None,
+            gene: Coding {
+                code: record.gene.clone(),
+                display: Some(record.hgnc_name.clone()),
+                system: None,
+                version: None,
+            },
+            id: String::new(),
+            interpretation: None,
+            localization: None,
+            patient: Reference {
+                display: None,
+                id: String::new(),
+                reference_type: None,
+                system: None,
+            },
+            position: Position {
+                start: record.start.parse().unwrap_or(0.0),
+                end: record.end.parse().ok(),
+            },
+            protein_change: if record.protein.clone().is_empty() {
+                None
+            } else {
+                Some(record.protein.clone())
+            },
+            read_depth: record.read_depth.parse().unwrap_or(0), // To be interpreted as "not present"
+            ref_allele: if record.ref_allele.is_empty() {
+                "-".to_string()
+            } else {
+                record.ref_allele.clone()
+            },
+            transcript_id: TranscriptId {
+                system: TranscriptIdSystem::EnsemblOrg,
+                value: record.ensembl_id.clone(),
+            },
+        })
+        .collect_vec();
+
+    let copy_number_variants = copy_number_records
+        .iter()
+        .map(|record| Cnv {
+            // Use Chromosome::ChrMt as placeholder for non present value
+            chromosome: map_chromosome(&record.chromosome).unwrap_or(Chromosome::ChrMt),
+            cn_a: None,
+            cn_b: None,
+            cnv_type: CnvCoding {
+                code: if record.cnv_type.contains("loss") {
+                    CnvCodingCode::Loss
+                } else if record
+                    .total_copy_number
+                    .replace(',', ".")
+                    .parse()
+                    .unwrap_or(0.0)
+                    < 3.0
+                {
+                    CnvCodingCode::LowLevelGain
+                } else {
+                    CnvCodingCode::HighLevelGain
+                },
+                display: Some(record.cnv_type.clone()),
+                system: None,
+                version: None,
+            },
+            copy_number_neutral_lo_h: None,
+            end_range: None,
+            external_ids: None,
+            id: String::new(),
+            localization: None,
+            patient: Reference {
+                display: None,
+                id: String::new(),
+                reference_type: None,
+                system: None,
+            },
+            relative_copy_number: None,
+            reported_affected_genes: None,
+            reported_focality: None,
+            start_range: None,
+            total_copy_number: record
+                .total_copy_number
+                .replace(',', ".")
+                .parse::<i64>()
+                .ok(),
+        })
+        .collect_vec();
+
+    let ngs_report_results = NgsReportResults {
+        brcaness: None,
+        copy_number_variants: if copy_number_variants.is_empty() {
+            None
+        } else {
+            Some(copy_number_variants)
+        },
+        dna_fusions: None,
+        hrd_score: None,
+        rna_fusions: None,
+        rna_seqs: None,
+        simple_variants: if simple_variants.is_empty() {
+            None
+        } else {
+            Some(simple_variants)
+        },
+        tmb: None,
+        tumor_cell_content: None,
+    };
+    let json_content = serde_json::to_string_pretty(&ngs_report_results)?;
+    let mut output_file = path.to_path_buf();
+    output_file.set_extension("dnpm.json");
+    fs::write(output_file, json_content).map_err(Into::into)
 }
 
 #[cfg(test)]

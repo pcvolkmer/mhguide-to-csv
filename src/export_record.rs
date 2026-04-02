@@ -15,35 +15,35 @@ pub(crate) struct SimpleVariantRecord {
     #[serde(rename = "Ergebnis")]
     ergebnis: String,
     #[serde(rename = "Gen")]
-    gene: String,
+    pub(crate) gene: String,
     #[serde(rename = "Genomposition (g.)")]
-    genomic_position: String,
+    pub(crate) genomic_position: String,
     #[serde(rename = "cDNA Nomenklatur (c.)")]
-    cdna: String,
+    pub(crate) cdna: String,
     #[serde(rename = "Proteinebene (original)")]
     protein_orig: String,
     #[serde(rename = "Proteinebene Nomenklatur (p.)")]
-    protein: String,
+    pub(crate) protein: String,
     #[serde(rename = "Chromosom")]
-    chromosome: String,
+    pub(crate) chromosome: String,
     #[serde(rename = "EnsemblID")]
-    ensembl_id: String,
+    pub(crate) ensembl_id: String,
     #[serde(rename = "HGNC ID")]
-    hgnc_id: String,
+    pub(crate) hgnc_id: String,
     #[serde(rename = "HGNC Name")]
-    hgnc_name: String,
+    pub(crate) hgnc_name: String,
     #[serde(rename = "Start")]
-    start: String,
+    pub(crate) start: String,
     #[serde(rename = "Ende")]
-    end: String,
+    pub(crate) end: String,
     #[serde(rename = "Alternative Nucleotide")]
-    alt_allele: String,
+    pub(crate) alt_allele: String,
     #[serde(rename = "Reference Nucleotide")]
-    ref_allele: String,
+    pub(crate) ref_allele: String,
     #[serde(rename = "Read-Depth")]
-    read_depth: String,
+    pub(crate) read_depth: String,
     #[serde(rename = "Allelfrequenz (%)")]
-    allelic_frequency: String,
+    pub(crate) allelic_frequency: String,
     #[serde(rename = "dbSNP ID")]
     dbsnp: String,
     #[serde(rename = "Pathogenitätsklasse")]
@@ -215,21 +215,21 @@ pub(crate) struct CopyNumberRecord {
     #[serde(rename = "Ergebnis")]
     ergebnis: String,
     #[serde(rename = "Type")]
-    cnv_type: String,
+    pub(crate) cnv_type: String,
     #[serde(rename = "Gen")]
-    gene: String,
+    pub(crate) gene: String,
     #[serde(rename = "Chromosom")]
-    chromosome: String,
+    pub(crate) chromosome: String,
     #[serde(rename = "EnsemblID")]
-    ensembl_id: String,
+    pub(crate) ensembl_id: String,
     #[serde(rename = "HGNC ID")]
-    hgnc_id: String,
+    pub(crate) hgnc_id: String,
     #[serde(rename = "HGNC Name")]
-    hgnc_name: String,
+    pub(crate) hgnc_name: String,
     #[serde(rename = "Total CN")]
-    total_copy_number: String,
+    pub(crate) total_copy_number: String,
     #[serde(rename = "Pathogenitätsklasse")]
-    classification: String,
+    pub(crate) classification: String,
 }
 
 impl CopyNumberRecord {
