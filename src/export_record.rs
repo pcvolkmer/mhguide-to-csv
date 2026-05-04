@@ -350,6 +350,8 @@ pub(crate) struct FusionRecord {
     #[serde(rename = "Fusioniertes Gen")]
     fusion_gene: String,
 
+    #[serde(rename = "5' Partner Chromosom")]
+    chromosome_5: String,
     #[serde(rename = "5' Partner EnsemblID")]
     ensembl_id_5: String,
     #[serde(rename = "5' Partner HGNC ID")]
@@ -365,6 +367,8 @@ pub(crate) struct FusionRecord {
     #[serde(rename = "5' Partner Strand")]
     strand_5: String,
 
+    #[serde(rename = "3' Partner Chromosom")]
+    chromosome_3: String,
     #[serde(rename = "3' Partner EnsemblID")]
     ensembl_id_3: String,
     #[serde(rename = "3' Partner HGNC ID")]
@@ -446,21 +450,55 @@ impl FusionRecord {
                 ergebnis: fusion.to_string(),
                 gene: partner_5.clone(),
                 fusion_gene: partner_3.clone(),
+                chromosome_5: String::new(),
                 ensembl_id_5: gene(partner_5).ensembl_id.unwrap_or_default(),
                 hgnc_id_5: gene(partner_5).hgnc_id,
                 hgnc_name_5: gene(partner_5).name,
-                transcript_id_5: transcript_id_5.to_string(),
-                exon_id_5: exon_id_5.to_string(),
+                transcript_id_5: transcript_id_5.clone(),
+                exon_id_5: exon_id_5.clone(),
                 transcript_position_5: transcript_position_5.to_string(),
-                strand_5: strand.to_string(),
+                strand_5: strand.clone(),
+                chromosome_3: String::new(),
                 ensembl_id_3: gene(partner_3).ensembl_id.unwrap_or_default(),
                 hgnc_id_3: gene(partner_3).hgnc_id,
                 hgnc_name_3: gene(partner_3).name,
-                transcript_id_3: transcript_id_3.to_string(),
-                exon_id_3: exon_id_3.to_string(),
+                transcript_id_3: transcript_id_3.clone(),
+                exon_id_3: exon_id_3.clone(),
                 transcript_position_3: transcript_position_3.to_string(),
-                strand_3: strand.to_string(),
+                strand_3: strand.clone(),
                 number_reported_reads: number_reported_reads.to_string(),
+                classification: String::new(),
+            },
+            Fusion::DnaFusion {
+                partner_3,
+                partner_5,
+                chromosome_3,
+                chromosome_5,
+                transcript_position_3,
+                transcript_position_5,
+            } => FusionRecord {
+                h_nummer: h_number.to_string(),
+                ref_genome: ref_genome_version.to_string(),
+                ergebnis: fusion.to_string(),
+                gene: partner_5.clone(),
+                fusion_gene: partner_3.clone(),
+                chromosome_5: chromosome_5.clone(),
+                ensembl_id_5: gene(partner_5).ensembl_id.unwrap_or_default(),
+                hgnc_id_5: gene(partner_5).hgnc_id,
+                hgnc_name_5: gene(partner_5).name,
+                transcript_id_5: String::new(),
+                exon_id_5: String::new(),
+                transcript_position_5: transcript_position_5.to_string(),
+                strand_5: String::new(),
+                chromosome_3: chromosome_3.clone(),
+                ensembl_id_3: gene(partner_3).ensembl_id.unwrap_or_default(),
+                hgnc_id_3: gene(partner_3).hgnc_id,
+                hgnc_name_3: gene(partner_3).name,
+                transcript_id_3: String::new(),
+                exon_id_3: String::new(),
+                transcript_position_3: transcript_position_3.to_string(),
+                strand_3: String::new(),
+                number_reported_reads: String::new(),
                 classification: String::new(),
             },
         }

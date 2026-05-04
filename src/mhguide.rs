@@ -374,7 +374,7 @@ impl MhGuide {
         }
 
         let protein_regex = Regex::new(
-            r"[A-Z0-9_\\-]+\s+p\.[*FLSYCWPHQRIMTNKVADEG]?(\d+)?_?[*FLSYCWPHQRIMTNKVADEG]\d+(del|ins|delins|dup)?([*=FLSYCWPHQRIMTNKVADEG]+|fs)?"
+            r"[A-Z0-9_\\-]+\s+p\.[*FLSYCWPHQRIMTNKVADEG]?(\d+)?_?[*FLSYCWPHQRIMTNKVADEG]\d+(del|ins|delins|dup)?(\*|=|fs|[*=FLSYCWPHQRIMTNKVADEG]+)?"
         )
             .expect("Invalid regex");
         let mut result = collect(s, &protein_regex);
@@ -384,7 +384,6 @@ impl MhGuide {
         )
         .expect("Invalid regex");
         let cdna_result = collect(s, &cdna_regex);
-
         result.extend(cdna_result);
 
         result
@@ -392,7 +391,7 @@ impl MhGuide {
 
     #[allow(clippy::expect_used)]
     fn report_narrative_copy_variants(&self) -> Vec<(String, f32)> {
-        let regex = Regex::new(r"(?<gene>[A-Z0-9_\\-]+)\s*.*GCN\s*=\s*(?<gcn>\d+\.\d+)")
+        let regex = Regex::new(r"(?<gene>[A-Z0-9_\\-]+)\s*.*GCN\s*[:=]\s*(?<gcn>\d+\.\d+)")
             .expect("Invalid regex");
 
         self.report_narrative
@@ -430,6 +429,14 @@ pub(crate) enum Fusion {
         strand: String,
         number_reported_reads: u32,
     },
+    DnaFusion {
+        partner_3: String,
+        partner_5: String,
+        chromosome_3: String,
+        chromosome_5: String,
+        transcript_position_3: u32,
+        transcript_position_5: u32,
+    },
 }
 
 impl Display for Fusion {
@@ -437,6 +444,9 @@ impl Display for Fusion {
         match self {
             Fusion::RnaFusion { .. } => {
                 write!(f, "RNA Fusion")
+            }
+            Fusion::DnaFusion { .. } => {
+                write!(f, "DNA Fusion")
             }
         }
     }
@@ -446,9 +456,9 @@ impl FromStr for Fusion {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\);\sTranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+);\sStrand:\s(?<strand>[+-]);\sBreakpoint:\schr\d+:(?<transcript_position_5>\d+)/chr\d+:(?<transcript_position_3>\d+);\sSupporting\sread\spairs:\s(?<number_reported_reads>\d+)")            .map_err(|_| ())?;
+        let rna_regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\)[,;]\s[Tt]ranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+)[,;]\s[Ss]trand:\s(?<strand>[+-])[,;]\s[Bb]reakpoint:\schr\d+:(?<transcript_position_5>\d+)/chr\d+:(?<transcript_position_3>\d+)[,;]\s[Ss]upporting\sread\spairs:\s(?<number_reported_reads>\d+)").map_err(|_| ())?;
 
-        match regex.captures(s) {
+        let rna_result = match rna_regex.captures(s) {
             Some(captures) => {
                 let partner_3 = match captures.name("partner_3") {
                     Some(value) => value.as_str().to_owned(),
@@ -514,7 +524,62 @@ impl FromStr for Fusion {
                 })
             }
             _ => Err(()),
+        };
+
+        let dna_regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\)[,;]\s[Tt]ranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+)[,;]\s[Bb]reakpoint:\s(?<chromosome_5>chr(X|Y|\d+)):(?<transcript_position_5>\d+)/(?<chromosome_3>chr(X|Y|\d+)):(?<transcript_position_3>\d+)[,;]\s[Ss]upporting\sread\spairs:\s(?<number_reported_reads>\d+)").map_err(|_| ())?;
+
+        let dna_result = match dna_regex.captures(s) {
+            Some(captures) => {
+                let partner_3 = match captures.name("partner_3") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+                let partner_5 = match captures.name("partner_5") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+                let transcript_position_3 = match captures.name("transcript_position_3") {
+                    Some(value) => match value.as_str().parse::<u32>() {
+                        Ok(value) => value,
+                        Err(_) => return Err(()),
+                    },
+                    _ => return Err(()),
+                };
+                let transcript_position_5 = match captures.name("transcript_position_5") {
+                    Some(value) => match value.as_str().parse::<u32>() {
+                        Ok(value) => value,
+                        Err(_) => return Err(()),
+                    },
+                    _ => return Err(()),
+                };
+                let chromosome_3 = match captures.name("chromosome_3") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+                let chromosome_5 = match captures.name("chromosome_5") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => return Err(()),
+                };
+
+                Ok(Fusion::DnaFusion {
+                    partner_3,
+                    partner_5,
+                    transcript_position_3,
+                    transcript_position_5,
+                    chromosome_3,
+                    chromosome_5,
+                })
+            }
+            _ => Err(()),
+        };
+
+        if rna_result.is_ok() {
+            return rna_result;
+        } else if dna_result.is_ok() {
+            return dna_result;
         }
+
+        Err(())
     }
 }
 
@@ -878,7 +943,7 @@ pub(crate) struct Biomarker {
 
 #[cfg(test)]
 mod tests {
-    use crate::mhguide::Fusion::RnaFusion;
+    use crate::mhguide::Fusion::{DnaFusion, RnaFusion};
     use crate::mhguide::ResultType::{CopyNumberVariant, HRD, MSI, SimpleVariant, TMB};
     use crate::mhguide::*;
     use rstest::rstest;
@@ -1137,6 +1202,10 @@ mod tests {
     #[case(
         "KMT2C p.K1234fs laut XYZ oncogenic; FANCA p.S1234F noch dazu; BRAF p.K1234F soll nicht doppelt sein",
         3
+    )]
+    #[case(
+        "KMT2C p.K1234fs, ENST00000123456.12 c.1234dup, ins Nonsense, 25.23, Likely oncogenic",
+        2
     )]
     fn test_should_add_protein_modification_report_narrative_matches(
         #[case] report_narrative: &str,
@@ -1460,6 +1529,7 @@ mod tests {
     #[rstest]
     #[case("KMT2C Copy number LOSS GCN = 0.00", 2)]
     #[case("KMT2C, GCN = 0.00", 2)]
+    #[case("KMT2C, chr9, GCN: 0.00", 2)]
     fn test_add_cnv_report_narrative(
         #[case] report_narrative: &str,
         #[case] expected_variants: usize,
@@ -1751,5 +1821,148 @@ mod tests {
             }
             _ => panic!("No RNA fusion found"),
         };
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    #[allow(clippy::panic)]
+    fn test_sv_examples_from_report_specification() {
+        static INPUT: &str = "Variant, Coding DNA, Type and effect, VAF (%), Classification\n\
+            KIAA0586 p.R116fs, ENST00000619416.4 c.347del, del Frameshift, 47.25, Likely oncogenic\n\
+            KMT2C p.Y816*, ENST00000262189.11 c.2447dup, ins Nonsense, 25.23, Likely oncogenic\n\
+            LMF1 p.V63fs, ENST00000262301.16 c.187del, del Frameshift, 46.84, Likely oncogenic";
+
+        let mh_guide = MhGuide {
+            general: General {
+                order_date: "2026-02-11".to_string(),
+                ref_genome_version: RefGenomeVersion::Hg19,
+                patient_identifier: PatientIdentifier {
+                    h_number: "H10000-26".to_string(),
+                    pid: "PID0123456".to_string(),
+                },
+            },
+
+            variants: vec![
+                Variant {
+                    id: 10000000,
+                    gene_symbol: Some("KIAA0586".to_string()),
+                    protein_modification: Some("p.R116fs".to_string()),
+                    protein_variant_type: Some(SimpleVariant("SNV".to_string())),
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
+                    chromosome: Some("chr1".to_string()),
+                    chromosome_modification: Some("g.12345678del".to_string()),
+                    transcript_hgvs_modified_object: Some("c.347del".to_string()),
+                    total_reads_in_tumor: Some(567),
+                    variant_allele_frequency_in_tumor: Some(47.25),
+                    db_snp: Some("rs202602111".to_string()),
+                    copy_number: None,
+                    classification_name: Some("Likely benign".to_string()),
+                    oncogenic_classification_name: None,
+                },
+                Variant {
+                    id: 20000000,
+                    gene_symbol: Some("KMT2C".to_string()),
+                    protein_modification: Some("p.Y816*".to_string()),
+                    protein_variant_type: Some(SimpleVariant("SNV".to_string())),
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
+                    chromosome: Some("chr1".to_string()),
+                    chromosome_modification: Some("g.12345678dup".to_string()),
+                    transcript_hgvs_modified_object: Some("c.2447dup".to_string()),
+                    total_reads_in_tumor: Some(567),
+                    variant_allele_frequency_in_tumor: Some(47.25),
+                    db_snp: Some("rs202602111".to_string()),
+                    copy_number: None,
+                    classification_name: Some("Likely benign".to_string()),
+                    oncogenic_classification_name: None,
+                },
+                Variant {
+                    id: 30000000,
+                    gene_symbol: Some("LMF1".to_string()),
+                    protein_modification: Some("p.V63fs".to_string()),
+                    protein_variant_type: Some(SimpleVariant("SNV".to_string())),
+                    display_variant_type: Some(SimpleVariant("SNV".to_string())),
+                    chromosome: Some("chr1".to_string()),
+                    chromosome_modification: Some("g.12345678del".to_string()),
+                    transcript_hgvs_modified_object: Some("c.187del".to_string()),
+                    total_reads_in_tumor: Some(567),
+                    variant_allele_frequency_in_tumor: Some(47.25),
+                    db_snp: Some("rs202602111".to_string()),
+                    copy_number: None,
+                    classification_name: Some("Likely benign".to_string()),
+                    oncogenic_classification_name: None,
+                },
+            ],
+            biomarkers: Biomarkers {
+                notable_biomarkers: vec![],
+            },
+            report_narrative: INPUT.to_string(),
+        };
+
+        let actual = mh_guide.relevant_variants(false);
+
+        assert_eq!(actual.len(), 3);
+    }
+
+    #[test]
+    fn test_cnv_examples_from_report_specification() {
+        static INPUT: &str = "Gene, Chromosome number, Gene Copy Number (GCN)\n\
+            ELAVL2, chr9, GCN: 12.2";
+
+        let mh_guide = MhGuide {
+            general: General {
+                order_date: "2026-02-11".to_string(),
+                ref_genome_version: RefGenomeVersion::Hg19,
+                patient_identifier: PatientIdentifier {
+                    h_number: "H10000-26".to_string(),
+                    pid: "PID0123456".to_string(),
+                },
+            },
+            variants: vec![Variant {
+                id: 12345678,
+                gene_symbol: Some("ELAVL2".to_string()),
+                protein_modification: Some("p.K1234fs".to_string()),
+                protein_variant_type: Some(CopyNumberVariant),
+                display_variant_type: Some(CopyNumberVariant),
+                chromosome: Some("chr9".to_string()),
+                chromosome_modification: None,
+                transcript_hgvs_modified_object: None,
+                total_reads_in_tumor: Some(123),
+                variant_allele_frequency_in_tumor: None,
+                db_snp: None,
+                copy_number: Some(12.20),
+                classification_name: None,
+                oncogenic_classification_name: Some("Unclassified".to_string()),
+            }],
+            biomarkers: Biomarkers {
+                notable_biomarkers: vec![],
+            },
+            report_narrative: INPUT.to_string(),
+        };
+
+        let actual = mh_guide.relevant_variants(false);
+
+        assert_eq!(actual.len(), 1);
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn test_fusion_examples_from_report_specification() {
+        static INPUT: &str = "AKAP8L(ex 12)::BRD4(ex 2), \
+            transcript ID: NM_014371.4/NM_014299.2, \
+            breakpoint: chr19:15507961/chr19:15383944, \
+            supporting read pairs: 1158";
+
+        let value = Fusion::from_str(INPUT).unwrap();
+        assert_eq!(
+            value,
+            DnaFusion {
+                partner_3: "BRD4".to_string(),
+                partner_5: "AKAP8L".to_string(),
+                chromosome_3: "chr19".to_string(),
+                chromosome_5: "chr19".to_string(),
+                transcript_position_3: 15383944,
+                transcript_position_5: 15507961,
+            }
+        );
     }
 }
