@@ -144,5 +144,5 @@
       }
     ]
   },
-  "REPORT_NARRATIVE": "KMT2C, GCN = 0.00\nABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: -; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234"
+  "REPORT_NARRATIVE": "KMT2C, GCN = 0.00\nABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: -/-; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234"
 }
