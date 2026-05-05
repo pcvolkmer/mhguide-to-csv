@@ -431,6 +431,7 @@ pub(crate) enum Fusion {
         strand: String,
         number_reported_reads: u32,
     },
+    #[allow(unused)]
     DnaFusion {
         partner_3: String,
         partner_5: String,
@@ -458,9 +459,9 @@ impl FromStr for Fusion {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let rna_regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\)[,;]\s[Tt]ranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+)[,;]\s[Ss]trand:\s(?<strand>[+-])[,;]\s[Bb]reakpoint:\schr\d+:(?<transcript_position_5>\d+)/chr\d+:(?<transcript_position_3>\d+)[,;]\s[Ss]upporting\sread\spairs:\s(?<number_reported_reads>\d+)").map_err(|_| ())?;
+        let rna_regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\)[,;]\s[Tt]ranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+)[,;]\s([Ss]trand:\s(?<strand>[+-])[,;]\s)?[Bb]reakpoint:\schr\d+:(?<transcript_position_5>\d+)/chr\d+:(?<transcript_position_3>\d+)[,;]\s[Ss]upporting\sread\spairs:\s(?<number_reported_reads>\d+)").map_err(|_| ())?;
 
-        let rna_result = match rna_regex.captures(s) {
+        match rna_regex.captures(s) {
             Some(captures) => {
                 let partner_3 = match captures.name("partner_3") {
                     Some(value) => value.as_str().to_owned(),
@@ -502,7 +503,7 @@ impl FromStr for Fusion {
                 };
                 let strand = match captures.name("strand") {
                     Some(value) => value.as_str().to_owned(),
-                    _ => return Err(()),
+                    _ => String::new(),
                 };
                 let number_reported_reads = match captures.name("number_reported_reads") {
                     Some(value) => match value.as_str().parse::<u32>() {
@@ -526,62 +527,7 @@ impl FromStr for Fusion {
                 })
             }
             _ => Err(()),
-        };
-
-        let dna_regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\)[,;]\s[Tt]ranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+)[,;]\s[Bb]reakpoint:\s(?<chromosome_5>chr(X|Y|\d+)):(?<transcript_position_5>\d+)/(?<chromosome_3>chr(X|Y|\d+)):(?<transcript_position_3>\d+)[,;]\s[Ss]upporting\sread\spairs:\s(?<number_reported_reads>\d+)").map_err(|_| ())?;
-
-        let dna_result = match dna_regex.captures(s) {
-            Some(captures) => {
-                let partner_3 = match captures.name("partner_3") {
-                    Some(value) => value.as_str().to_owned(),
-                    _ => return Err(()),
-                };
-                let partner_5 = match captures.name("partner_5") {
-                    Some(value) => value.as_str().to_owned(),
-                    _ => return Err(()),
-                };
-                let transcript_position_3 = match captures.name("transcript_position_3") {
-                    Some(value) => match value.as_str().parse::<u32>() {
-                        Ok(value) => value,
-                        Err(_) => return Err(()),
-                    },
-                    _ => return Err(()),
-                };
-                let transcript_position_5 = match captures.name("transcript_position_5") {
-                    Some(value) => match value.as_str().parse::<u32>() {
-                        Ok(value) => value,
-                        Err(_) => return Err(()),
-                    },
-                    _ => return Err(()),
-                };
-                let chromosome_3 = match captures.name("chromosome_3") {
-                    Some(value) => value.as_str().to_owned(),
-                    _ => return Err(()),
-                };
-                let chromosome_5 = match captures.name("chromosome_5") {
-                    Some(value) => value.as_str().to_owned(),
-                    _ => return Err(()),
-                };
-
-                Ok(Fusion::DnaFusion {
-                    partner_3,
-                    partner_5,
-                    transcript_position_3,
-                    transcript_position_5,
-                    chromosome_3,
-                    chromosome_5,
-                })
-            }
-            _ => Err(()),
-        };
-
-        if rna_result.is_ok() {
-            return rna_result;
-        } else if dna_result.is_ok() {
-            return dna_result;
         }
-
-        Err(())
     }
 }
 
@@ -945,7 +891,7 @@ pub(crate) struct Biomarker {
 
 #[cfg(test)]
 mod tests {
-    use crate::mhguide::Fusion::{DnaFusion, RnaFusion};
+    use crate::mhguide::Fusion::RnaFusion;
     use crate::mhguide::ResultType::{CopyNumberVariant, HRD, MSI, SimpleVariant, TMB};
     use crate::mhguide::*;
     use rstest::rstest;
@@ -1957,13 +1903,17 @@ mod tests {
         let value = Fusion::from_str(INPUT).unwrap();
         assert_eq!(
             value,
-            DnaFusion {
+            RnaFusion {
                 partner_3: "BRD4".to_string(),
                 partner_5: "AKAP8L".to_string(),
-                chromosome_3: "chr19".to_string(),
-                chromosome_5: "chr19".to_string(),
+                transcript_id_3: "NM_014299.2".to_string(),
+                transcript_id_5: "NM_014371.4".to_string(),
                 transcript_position_3: 15383944,
                 transcript_position_5: 15507961,
+                exon_id_3: "Exon2".to_string(),
+                exon_id_5: "Exon12".to_string(),
+                strand: String::new(),
+                number_reported_reads: 1158,
             }
         );
     }

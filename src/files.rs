@@ -175,6 +175,7 @@ pub(crate) fn write_xlsx_file(
     workbook.save(output_file).map_err(Into::into)
 }
 
+#[allow(unused)]
 pub(crate) fn write_json_file(
     path: &Path,
     simple_variant_records: &[SimpleVariantRecord],
@@ -192,7 +193,7 @@ pub(crate) fn write_json_file(
             } else {
                 record.alt_allele.clone()
             },
-            // Use Chromosome::ChrMt as placeholder for non present value
+            // Use Chromosome::ChrMt as placeholder for non-present value
             chromosome: map_chromosome(&record.chromosome).unwrap_or(Chromosome::ChrMt),
             dna_change: record.cdna.clone(),
             exon_id: None,
