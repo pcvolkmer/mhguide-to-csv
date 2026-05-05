@@ -428,7 +428,8 @@ pub(crate) enum Fusion {
         transcript_position_5: u32,
         exon_id_3: String,
         exon_id_5: String,
-        strand: String,
+        strand_3: String,
+        strand_5: String,
         number_reported_reads: u32,
     },
     #[allow(unused)]
@@ -459,7 +460,7 @@ impl FromStr for Fusion {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let rna_regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\)[,;]\s[Tt]ranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+)[,;]\s([Ss]trand:\s(?<strand>[+-])[,;]\s)?[Bb]reakpoint:\schr\d+:(?<transcript_position_5>\d+)/chr\d+:(?<transcript_position_3>\d+)[,;]\s[Ss]upporting\sread\spairs:\s(?<number_reported_reads>\d+)").map_err(|_| ())?;
+        let rna_regex = Regex::new(r"(?<partner_5>[A-Z0-9_\\-]+)\(ex (?<exon_5>\d+)\)::(?<partner_3>[A-Z0-9_\\-]+)\(ex (?<exon_3>\d+)\)[,;]\s[Tt]ranscript\sID:\s(?<transcript_id_5>NM_\d+\.\d+)/(?<transcript_id_3>NM_\d+\.\d+)[,;]\s([Ss]trand:\s(?<strand_5>[+-]?)/(?<strand_3>[+-]?)[,;]\s)?[Bb]reakpoint:\schr\d+:(?<transcript_position_5>\d+)/chr\d+:(?<transcript_position_3>\d+)[,;]\s[Ss]upporting\sread\spairs:\s(?<number_reported_reads>\d+)").map_err(|_| ())?;
 
         match rna_regex.captures(s) {
             Some(captures) => {
@@ -501,7 +502,11 @@ impl FromStr for Fusion {
                     Some(value) => format!("Exon{}", value.as_str()),
                     _ => return Err(()),
                 };
-                let strand = match captures.name("strand") {
+                let strand_3 = match captures.name("strand_3") {
+                    Some(value) => value.as_str().to_owned(),
+                    _ => String::new(),
+                };
+                let strand_5 = match captures.name("strand_5") {
                     Some(value) => value.as_str().to_owned(),
                     _ => String::new(),
                 };
@@ -522,7 +527,8 @@ impl FromStr for Fusion {
                     transcript_position_5,
                     exon_id_3,
                     exon_id_5,
-                    strand,
+                    strand_3,
+                    strand_5,
                     number_reported_reads,
                 })
             }
@@ -1717,15 +1723,10 @@ mod tests {
         assert_eq!(value, Some(0.19));
     }
 
-    #[test]
-    #[allow(clippy::unwrap_used)]
-    fn test_extract_rna_fusion_from_string() {
-        static INPUT: &str = "ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: -; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234";
-
-        let value = Fusion::from_str(INPUT).unwrap();
-        assert_eq!(
-            value,
-            RnaFusion {
+    #[rstest]
+    #[case(
+        "ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: -/-; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234",
+        RnaFusion {
                 partner_3: "ABCD2".to_string(),
                 partner_5: "ABCD1".to_string(),
                 transcript_id_3: "NM_012456.2".to_string(),
@@ -1734,10 +1735,79 @@ mod tests {
                 transcript_position_5: 12345678,
                 exon_id_3: "Exon2".to_string(),
                 exon_id_5: "Exon1".to_string(),
-                strand: "-".to_string(),
+                strand_3: "-".to_string(),
+                strand_5: "-".to_string(),
                 number_reported_reads: 1234,
             }
-        );
+    )]
+    #[case(
+        "ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: -/+; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234",
+        RnaFusion {
+                partner_3: "ABCD2".to_string(),
+                partner_5: "ABCD1".to_string(),
+                transcript_id_3: "NM_012456.2".to_string(),
+                transcript_id_5: "NM_012345.4".to_string(),
+                transcript_position_3: 13456789,
+                transcript_position_5: 12345678,
+                exon_id_3: "Exon2".to_string(),
+                exon_id_5: "Exon1".to_string(),
+                strand_3: "+".to_string(),
+                strand_5: "-".to_string(),
+                number_reported_reads: 1234,
+            }
+    )]
+    #[case(
+        "ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: +/-; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234",
+        RnaFusion {
+                partner_3: "ABCD2".to_string(),
+                partner_5: "ABCD1".to_string(),
+                transcript_id_3: "NM_012456.2".to_string(),
+                transcript_id_5: "NM_012345.4".to_string(),
+                transcript_position_3: 13456789,
+                transcript_position_5: 12345678,
+                exon_id_3: "Exon2".to_string(),
+                exon_id_5: "Exon1".to_string(),
+                strand_3: "-".to_string(),
+                strand_5: "+".to_string(),
+                number_reported_reads: 1234,
+            }
+    )]
+    #[case(
+        "ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234",
+        RnaFusion {
+                partner_3: "ABCD2".to_string(),
+                partner_5: "ABCD1".to_string(),
+                transcript_id_3: "NM_012456.2".to_string(),
+                transcript_id_5: "NM_012345.4".to_string(),
+                transcript_position_3: 13456789,
+                transcript_position_5: 12345678,
+                exon_id_3: "Exon2".to_string(),
+                exon_id_5: "Exon1".to_string(),
+                strand_3: String::new(),
+                strand_5: String::new(),
+                number_reported_reads: 1234,
+            }
+    )]
+    #[case(
+        "ABCD1(ex 1)::ABCD2(ex 2); Transcript ID: NM_012345.4/NM_012456.2; Strand: /; Breakpoint: chr19:12345678/chr19:13456789; Supporting read pairs: 1234",
+        RnaFusion {
+                partner_3: "ABCD2".to_string(),
+                partner_5: "ABCD1".to_string(),
+                transcript_id_3: "NM_012456.2".to_string(),
+                transcript_id_5: "NM_012345.4".to_string(),
+                transcript_position_3: 13456789,
+                transcript_position_5: 12345678,
+                exon_id_3: "Exon2".to_string(),
+                exon_id_5: "Exon1".to_string(),
+                strand_3: String::new(),
+                strand_5: String::new(),
+                number_reported_reads: 1234,
+            }
+    )]
+    #[allow(clippy::expect_used)]
+    fn test_extract_rna_fusion_from_string(#[case] input: &str, #[case] expected: Fusion) {
+        let value = Fusion::from_str(input).expect("Failed to parse fusion string");
+        assert_eq!(value, expected);
     }
 
     #[test]
@@ -1762,7 +1832,8 @@ mod tests {
                         transcript_position_5: 12345678,
                         exon_id_3: "Exon2".to_string(),
                         exon_id_5: "Exon1".to_string(),
-                        strand: "-".to_string(),
+                        strand_3: "-".to_string(),
+                        strand_5: "-".to_string(),
                         number_reported_reads: 1234,
                     }
                 );
@@ -1912,7 +1983,8 @@ mod tests {
                 transcript_position_5: 15507961,
                 exon_id_3: "Exon2".to_string(),
                 exon_id_5: "Exon12".to_string(),
-                strand: String::new(),
+                strand_3: String::new(),
+                strand_5: String::new(),
                 number_reported_reads: 1158,
             }
         );
