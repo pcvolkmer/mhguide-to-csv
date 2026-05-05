@@ -1,4 +1,3 @@
-use crate::mhguide::VariantEffect::{CopyGain, CopyLoss};
 use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Deserializer};
@@ -66,7 +65,10 @@ impl MhGuide {
             .notable_biomarkers
             .iter()
             .flat_map(|nb| nb.biomarkers.iter())
-            .filter(|b| b.variant_effect == Some(CopyGain) || b.variant_effect == Some(CopyLoss))
+            .filter(|b| {
+                b.variant_effect == Some(VariantEffect::CopyGain)
+                    || b.variant_effect == Some(VariantEffect::CopyLoss)
+            })
             .map(|b| b.id.to_owned())
             .collect::<Vec<_>>();
 
@@ -1089,7 +1091,7 @@ mod tests {
                             id: 12345678,
                             display_modified_object: Some("EGFR".to_string()),
                             display_variant_type: Some(CopyNumberVariant),
-                            variant_effect: Some(CopyGain),
+                            variant_effect: Some(VariantEffect::CopyGain),
                             tmb_variant_count_per_megabase: None,
                             copy_number: Some("12.34".to_string()),
                             score: None,
@@ -1615,7 +1617,7 @@ mod tests {
                             id: 12345678,
                             display_modified_object: None,
                             display_variant_type: Some(CopyNumberVariant),
-                            variant_effect: Some(CopyGain),
+                            variant_effect: Some(VariantEffect::CopyGain),
                             tmb_variant_count_per_megabase: None,
                             copy_number: Some("12.34".to_string()),
                             score: None,
