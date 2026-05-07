@@ -1,6 +1,6 @@
 use crate::export_record::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
-use crate::mhguide::MhGuide;
 use itertools::Itertools;
+use mhguide_umr::MhGuide;
 use mv64e_mtb_dto::{
     Chromosome, Cnv, CnvCoding, CnvCodingCode, Coding, NgsReportResults, Position, Reference, Snv,
     TranscriptId, TranscriptIdSystem,

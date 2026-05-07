@@ -1,15 +1,14 @@
 use crate::cli::Cli;
 use crate::export_record::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use crate::files::read_file;
-use crate::mhguide::{MhGuide, ResultType, Variant};
 use clap::Parser;
+use mhguide_umr::{MhGuide, ResultType, Variant};
 use rayon::prelude::*;
 
 mod cli;
 mod export_record;
 mod files;
 mod hgnc;
-mod mhguide;
 
 fn simple_variant_records(mhguide: &MhGuide, cli: &Cli) -> Vec<SimpleVariantRecord> {
     let variants = selected_variants(mhguide, cli);
