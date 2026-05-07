@@ -1,6 +1,7 @@
 use crate::hgnc::{Gene, Genes};
-use crate::mhguide;
-use crate::mhguide::{Fusion, RefGenomeVersion, ResultType, three_letter_protein_modification};
+use mhguide_umr::{
+    Fusion, RefGenomeVersion, ResultType, Variant, three_letter_protein_modification,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
@@ -86,7 +87,7 @@ impl SimpleVariantRecord {
     pub(crate) fn from_variant(
         h_number: &str,
         ref_genome_version: &RefGenomeVersion,
-        variant: &mhguide::Variant,
+        variant: &Variant,
     ) -> SimpleVariantRecord {
         let gene = match GENES.find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default()) {
             Some(gene) => gene,
@@ -267,7 +268,7 @@ impl CopyNumberRecord {
     pub(crate) fn from_variant(
         h_number: &str,
         ref_genome_version: &RefGenomeVersion,
-        variant: &mhguide::Variant,
+        variant: &Variant,
     ) -> CopyNumberRecord {
         let gene = match GENES.find_by_symbol(&variant.gene_symbol.clone().unwrap_or_default()) {
             Some(gene) => gene,

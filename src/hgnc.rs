@@ -32,7 +32,7 @@ impl Genes {
     ///
     /// Each record from the CSV is mapped to a `Gene` struct, which includes:
     /// - `hgnc_id` (String): The HGNC ID of the gene.
-    /// - `symbol` (String): The gene's apprived symbol, with spaces removed.
+    /// - `symbol` (String): The gene's approved symbol, with spaces removed.
     /// - `previous_symbols` (Vec<String>): A list of previous symbols for the gene.
     /// - `name` (String): The name of the gene.
     /// - `ensembl_id` (Option<String>): The Ensembl ID, if provided.
