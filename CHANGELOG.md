@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.4.1...v0.5.0) (2026-05-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* implement new requirements from pathology UMR ([#34](https://github.com/pcvolkmer/mhguide-to-csv/issues/34))
+
+### Features
+
+* implement new requirements from pathology UMR ([#34](https://github.com/pcvolkmer/mhguide-to-csv/issues/34)) ([98e0209](https://github.com/pcvolkmer/mhguide-to-csv/commit/98e0209ac4479e4eb9b647bf2599afdac239744e))
+* only map to RNA fusions ([#36](https://github.com/pcvolkmer/mhguide-to-csv/issues/36)) ([ad5722d](https://github.com/pcvolkmer/mhguide-to-csv/commit/ad5722d62ee4d90e366eb61a19c7528766c07703))
+* parse optional strand for both sides/directions ([#37](https://github.com/pcvolkmer/mhguide-to-csv/issues/37)) ([19b858a](https://github.com/pcvolkmer/mhguide-to-csv/commit/19b858a7fbed072a3a0a5397ef0d28e8c1961c42))
+* use external parser library ([#38](https://github.com/pcvolkmer/mhguide-to-csv/issues/38)) ([cb0e670](https://github.com/pcvolkmer/mhguide-to-csv/commit/cb0e6703a3a8884bef3304264ca2b214bba4f09b))
+
 ## [0.4.1](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.4.0...v0.4.1) (2026-04-02)
 
 
