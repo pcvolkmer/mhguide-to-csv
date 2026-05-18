@@ -25,6 +25,7 @@ Options:
       --oncogenic     Nur Varianten mit '(Likely) oncogenic' verwenden, keine aus 'REPORT_NARRATIVE'
       --no-artifacts  Entferne Artefakte aus 'REPORT_NARRATIVE'
       --xlsx          Exportiere im XLSX-Format (Excel 2007-365)
+      --json          Exportiere in 'OS.Molekulargenetik' ähnlichem JSON-Format
   -h, --help          Print help
   -V, --version       Print version
 ```
