@@ -2,7 +2,7 @@ use crate::export::json;
 use crate::export::json::{OsMolekulargenUntersuchung, OsMolekulargenetik};
 use crate::export::table::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use itertools::Itertools;
-use mhguide_umr::{General, MhGuide, PathogenicClassification};
+use mhguide_umr::{MhGuide, PathogenicClassification};
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -146,14 +146,14 @@ pub(crate) fn write_xlsx_file(
 #[allow(unused)]
 pub(crate) fn write_json_file(
     path: &Path,
-    general_information: &General,
+    mh_guide: &MhGuide,
     simple_variant_records: &[SimpleVariantRecord],
     copy_number_records: &[CopyNumberRecord],
     fusion_records: &[FusionRecord],
     biomarker_records: &[BiomarkerRecord],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    fn map_pathogenic_classification(s: &str) -> String {
-        match PathogenicClassification::from_str(s) {
+    fn map_pathogenic_classification(s: &str) -> Option<String> {
+        let result = match PathogenicClassification::from_str(s) {
             Ok(pathogenic_classification) => match pathogenic_classification {
                 PathogenicClassification::Benign => "1",
                 PathogenicClassification::LikelyBenign => "2",
@@ -161,9 +161,18 @@ pub(crate) fn write_json_file(
                 PathogenicClassification::LikelyPathogenic => "4",
                 PathogenicClassification::Pathogenic => "5",
             },
-            Err(()) => "",
+            Err(()) => return None,
+        };
+
+        Some(result.to_string())
+    }
+
+    fn empty_option(s: &str) -> Option<String> {
+        if !s.is_empty() {
+            return Some(s.to_string());
         }
-        .to_string()
+
+        None
     }
 
     let mut variants = simple_variant_records
@@ -172,12 +181,12 @@ pub(crate) fn write_json_file(
             untersucht: record.gene.clone(),
             genomposition: record.genomic_position.clone(),
             cdnanomenklatur: record.cdna.clone(),
-            proteinebenenomenklatur: record.protein.clone(),
+            proteinebenenomenklatur: empty_option(&record.protein),
             evchromosom: record.chromosome.clone(),
             evensemblid: record.ensembl_id.clone(),
             evhgncid: record.hgnc_id.clone(),
-            evhgncsymbol: record.gene.clone(),
-            evhgncname: record.hgnc_name.clone(),
+            evhgncsymbol: empty_option(&record.gene),
+            evhgncname: empty_option(&record.hgnc_name),
             evstart: u64::from_str(&record.start).ok(),
             evende: u64::from_str(&record.end).ok(),
             evaltnucleotide: if record.alt_allele.is_empty() {
@@ -192,7 +201,7 @@ pub(crate) fn write_json_file(
             },
             evreaddepth: u64::from_str(&record.read_depth).ok(),
             allelfrequenz: f64::from_str(&record.allelic_frequency).ok(),
-            evdbsnpid: record.dbsnp.clone(),
+            evdbsnpid: empty_option(&record.dbsnp),
             pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
         .collect_vec();
@@ -210,10 +219,10 @@ pub(crate) fn write_json_file(
             }
             .to_string(),
             cnvchromosom: record.chromosome.clone(),
-            cnvensemblid: record.ensembl_id.clone(),
-            cnvhgncid: record.hgnc_id.clone(),
-            cnvhgncsymbol: record.gene.clone(),
-            cnvhgncname: record.hgnc_name.clone(),
+            cnvensemblid: empty_option(&record.ensembl_id),
+            cnvhgncid: empty_option(&record.hgnc_id),
+            cnvhgncsymbol: empty_option(&record.gene),
+            cnvhgncname: empty_option(&record.hgnc_name),
             cnvtotalcndouble: f64::from_str(&record.total_copy_number).ok(),
             pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
@@ -226,18 +235,18 @@ pub(crate) fn write_json_file(
         .map(|record| OsMolekulargenUntersuchung::RnaFusion {
             untersucht: record.gene.clone(),
             fusioniertesgen: record.fusion_gene.clone(),
-            fusionrna5ensemblid: record.ensembl_id_5.clone(),
+            fusionrna5ensemblid: empty_option(&record.ensembl_id_5),
             fusionrna5hgncid: record.hgnc_id_5.clone(),
-            fusionrna5hgncsymbol: record.hgnc_name_5.clone(),
-            fusionrna5hgncname: record.hgnc_name_5.clone(),
+            fusionrna5hgncsymbol: empty_option(&record.hgnc_name_5),
+            fusionrna5hgncname: empty_option(&record.hgnc_name_5),
             fusionrna5transcriptid: record.transcript_id_5.clone(),
             fusionrna5exonid: record.exon_id_5.clone(),
             fusionrna5transposition: u64::from_str(&record.transcript_position_5.clone()).ok(),
             fusionrna5strand: record.strand_5.clone(),
-            fusionrna3ensemblid: record.ensembl_id_3.clone(),
+            fusionrna3ensemblid: empty_option(&record.ensembl_id_3),
             fusionrna3hgncid: record.hgnc_id_3.clone(),
-            fusionrna3hgncsymbol: record.hgnc_name_3.clone(),
-            fusionrna3hgncname: record.hgnc_name_3.clone(),
+            fusionrna3hgncsymbol: empty_option(&record.hgnc_name_3),
+            fusionrna3hgncname: empty_option(&record.hgnc_name_3),
             fusionrna3transcriptid: record.transcript_id_3.clone(),
             fusionrna3exonid: record.exon_id_3.clone(),
             fusionrna3transposition: u64::from_str(&record.transcript_position_3.clone()).ok(),
@@ -285,12 +294,21 @@ pub(crate) fn write_json_file(
         .collect_vec();
 
     let result = OsMolekulargenetik {
-        patient_id: general_information.patient_identifier.pid.clone(),
-        datum: general_information.order_date.clone(),
-        einsendenummer: general_information.patient_identifier.h_number.clone(),
-        referenzgenom: general_information.ref_genome_version.to_string(),
-        molekulargenuntersuchung: variants,
-        biomarker,
+        patient_id: mh_guide.general.patient_identifier.pid.clone(),
+        datum: chrono::NaiveDate::parse_from_str(&mh_guide.report_signed_formatted, "%d %b %Y")
+            .unwrap_or_default(),
+        einsendenummer: mh_guide.general.patient_identifier.h_number.clone(),
+        referenzgenom: mh_guide.general.ref_genome_version.to_string(),
+        molekulargenuntersuchung: if variants.is_empty() {
+            None
+        } else {
+            Some(variants)
+        },
+        biomarker: if biomarker.is_empty() {
+            None
+        } else {
+            Some(biomarker)
+        },
     };
 
     let json_content = serde_json::to_string_pretty(&result)?;

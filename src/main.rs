@@ -1,9 +1,11 @@
-use crate::cli::Cli;
+use crate::cli::{Cli, SubCommand};
+use crate::export::json::OsMolekulargenetik;
 use crate::files::read_file;
 use clap::Parser;
 use export::table::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use mhguide_umr::{MhGuide, ResultType, Variant};
 use rayon::prelude::*;
+use schemars::schema_for;
 
 mod cli;
 mod export;
@@ -98,50 +100,65 @@ fn biomarker_records(mhguide: &MhGuide) -> Vec<BiomarkerRecord> {
 }
 
 fn selected_variants<'a>(mhguide: &'a MhGuide, cli: &Cli) -> Vec<&'a Variant> {
-    if cli.all_variants {
-        mhguide.all_variants()
-    } else if cli.oncogenic {
-        mhguide.oncogenic_variants()
-    } else {
-        mhguide.relevant_variants(cli.no_artifacts)
+    match &cli.command {
+        SubCommand::Convert { convert_args, .. } => {
+            if convert_args.all_variants {
+                mhguide.all_variants()
+            } else if convert_args.oncogenic {
+                mhguide.oncogenic_variants()
+            } else {
+                mhguide.relevant_variants(convert_args.no_artifacts)
+            }
+        }
+        _ => vec![],
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    let mhguide = read_file(&cli.input_file)?;
 
-    let simple_variant_records = simple_variant_records(&mhguide, &cli);
-    let copy_number_records = copy_number_records(&mhguide, &cli);
-    let fusion_records = fusion_records(&mhguide);
-    let biomarker_records = biomarker_records(&mhguide);
+    match &cli.command {
+        SubCommand::Convert { convert_args, .. } => {
+            let mhguide = read_file(&convert_args.input_file)?;
 
-    if cli.xlsx {
-        return files::write_xlsx_file(
-            &cli.input_file,
-            &simple_variant_records,
-            &copy_number_records,
-            &fusion_records,
-            &biomarker_records,
-        );
+            let simple_variant_records = simple_variant_records(&mhguide, &cli);
+            let copy_number_records = copy_number_records(&mhguide, &cli);
+            let fusion_records = fusion_records(&mhguide);
+            let biomarker_records = biomarker_records(&mhguide);
+
+            if convert_args.xlsx {
+                return files::write_xlsx_file(
+                    &convert_args.input_file,
+                    &simple_variant_records,
+                    &copy_number_records,
+                    &fusion_records,
+                    &biomarker_records,
+                );
+            }
+
+            if convert_args.json {
+                return files::write_json_file(
+                    &convert_args.input_file,
+                    &mhguide,
+                    &simple_variant_records,
+                    &copy_number_records,
+                    &fusion_records,
+                    &biomarker_records,
+                );
+            }
+
+            files::write_csv_file(
+                &convert_args.input_file,
+                &simple_variant_records,
+                &copy_number_records,
+                &fusion_records,
+                &biomarker_records,
+            )
+        }
+        SubCommand::JsonSchema => {
+            let schema = schema_for!(OsMolekulargenetik);
+            println!("{}", serde_json::to_string_pretty(&schema)?);
+            Ok(())
+        }
     }
-
-    if cli.json {
-        return files::write_json_file(
-            &cli.input_file,
-            &mhguide.general,
-            &simple_variant_records,
-            &copy_number_records,
-            &fusion_records,
-            &biomarker_records,
-        );
-    }
-
-    files::write_csv_file(
-        &cli.input_file,
-        &simple_variant_records,
-        &copy_number_records,
-        &fusion_records,
-        &biomarker_records,
-    )
 }

@@ -129,13 +129,13 @@ impl Genes {
     /// # Arguments
     ///
     /// * `symbol` - A string slice representing the symbol to search for
-    /// within the previous symbols of a gene.
+    ///   within the previous symbols of a gene.
     ///
     /// # Returns
     ///
     /// * `Option<Gene>` - Returns `Some(Gene)` if a matching gene is found
-    /// whose `previous_symbols` contains the specified `symbol`.
-    /// Returns `None` if no matching gene is found.
+    ///   whose `previous_symbols` contains the specified `symbol`.
+    ///   Returns `None` if no matching gene is found.
     ///
     /// # Example
     ///

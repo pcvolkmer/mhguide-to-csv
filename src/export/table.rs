@@ -66,7 +66,7 @@ impl SimpleVariantRecord {
     /// # Returns
     ///
     /// * `SimpleVariantRecord` - An instance of the `SimpleVariantRecord` struct populated with various variant details,
-    /// including gene information, genomic changes, protein modifications, and various metadata.
+    ///   including gene information, genomic changes, protein modifications, and various metadata.
     ///
     /// # Behavior
     ///
