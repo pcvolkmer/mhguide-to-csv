@@ -40,7 +40,7 @@ pub(crate) struct Cli {
     #[arg(
         long,
         conflicts_with = "xlsx",
-        help = "Exportiere JSON gemäß DNPM-Datenmodell 2.1"
+        help = "Exportiere in 'OS.Molekulargenetik' ähnlichem JSON-Format"
     )]
     pub(crate) json: bool,
 }

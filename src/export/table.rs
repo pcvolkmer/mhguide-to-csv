@@ -1,6 +1,6 @@
 use crate::hgnc::{Gene, Genes};
 use mhguide_umr::{
-    Fusion, RefGenomeVersion, ResultType, Variant, three_letter_protein_modification,
+    three_letter_protein_modification, Fusion, RefGenomeVersion, ResultType, Variant,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
@@ -10,9 +10,9 @@ static GENES: LazyLock<Genes> = LazyLock::new(Genes::new);
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct SimpleVariantRecord {
     #[serde(rename = "H-Nummer")]
-    h_nummer: String,
+    pub(crate) h_nummer: String,
     #[serde(rename = "Referenz-Genom")]
-    ref_genome: String,
+    pub(crate) ref_genome: String,
     #[serde(rename = "Ergebnis")]
     ergebnis: String,
     #[serde(rename = "Gen")]
@@ -46,9 +46,9 @@ pub(crate) struct SimpleVariantRecord {
     #[serde(rename = "Allelfrequenz (%)")]
     pub(crate) allelic_frequency: String,
     #[serde(rename = "dbSNP ID")]
-    dbsnp: String,
+    pub(crate) dbsnp: String,
     #[serde(rename = "Pathogenitätsklasse")]
-    classification: String,
+    pub(crate) classification: String,
 }
 
 impl SimpleVariantRecord {
@@ -347,48 +347,48 @@ pub(crate) struct FusionRecord {
     #[serde(rename = "Ergebnis")]
     ergebnis: String,
     #[serde(rename = "Gen")]
-    gene: String,
+    pub(crate) gene: String,
     #[serde(rename = "Fusioniertes Gen")]
-    fusion_gene: String,
+    pub(crate) fusion_gene: String,
 
     #[serde(rename = "5' Partner Chromosom")]
-    chromosome_5: String,
+    pub(crate) chromosome_5: String,
     #[serde(rename = "5' Partner EnsemblID")]
-    ensembl_id_5: String,
+    pub(crate) ensembl_id_5: String,
     #[serde(rename = "5' Partner HGNC ID")]
-    hgnc_id_5: String,
+    pub(crate) hgnc_id_5: String,
     #[serde(rename = "5' Partner HGNC Name")]
-    hgnc_name_5: String,
+    pub(crate) hgnc_name_5: String,
     #[serde(rename = "5' Partner Transcript ID")]
-    transcript_id_5: String,
+    pub(crate) transcript_id_5: String,
     #[serde(rename = "5' Partner Exon ID")]
-    exon_id_5: String,
+    pub(crate) exon_id_5: String,
     #[serde(rename = "5' Partner Transcript Position")]
-    transcript_position_5: String,
+    pub(crate) transcript_position_5: String,
     #[serde(rename = "5' Partner Strand")]
-    strand_5: String,
+    pub(crate) strand_5: String,
 
     #[serde(rename = "3' Partner Chromosom")]
-    chromosome_3: String,
+    pub(crate) chromosome_3: String,
     #[serde(rename = "3' Partner EnsemblID")]
-    ensembl_id_3: String,
+    pub(crate) ensembl_id_3: String,
     #[serde(rename = "3' Partner HGNC ID")]
-    hgnc_id_3: String,
+    pub(crate) hgnc_id_3: String,
     #[serde(rename = "3' Partner HGNC Name")]
-    hgnc_name_3: String,
+    pub(crate) hgnc_name_3: String,
     #[serde(rename = "3' Partner Transcript ID")]
-    transcript_id_3: String,
+    pub(crate) transcript_id_3: String,
     #[serde(rename = "3' Partner Exon ID")]
-    exon_id_3: String,
+    pub(crate) exon_id_3: String,
     #[serde(rename = "3' Partner Transcript Position")]
-    transcript_position_3: String,
+    pub(crate) transcript_position_3: String,
     #[serde(rename = "3' Partner Strand")]
-    strand_3: String,
+    pub(crate) strand_3: String,
 
     #[serde(rename = "Number reported reads")]
-    number_reported_reads: String,
+    pub(crate) number_reported_reads: String,
     #[serde(rename = "Pathogenitätsklasse")]
-    classification: String,
+    pub(crate) classification: String,
 }
 
 impl FusionRecord {

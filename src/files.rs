@@ -1,46 +1,13 @@
-use crate::export_record::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
+use crate::export::json::{OsMolekulargenUntersuchung, OsMolekulargenetik};
+use crate::export::table::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use itertools::Itertools;
-use mhguide_umr::MhGuide;
-use mv64e_mtb_dto::{
-    Chromosome, Cnv, CnvCoding, CnvCodingCode, Coding, NgsReportResults, Position, Reference, Snv,
-    TranscriptId, TranscriptIdSystem,
-};
+use mhguide_umr::{General, MhGuide, PathogenicClassification};
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::Path;
 use std::str::FromStr;
-
-fn map_chromosome(s: &str) -> Result<Chromosome, ()> {
-    match s {
-        "chr1" => Ok(Chromosome::Chr1),
-        "chr2" => Ok(Chromosome::Chr2),
-        "chr3" => Ok(Chromosome::Chr3),
-        "chr4" => Ok(Chromosome::Chr4),
-        "chr5" => Ok(Chromosome::Chr5),
-        "chr6" => Ok(Chromosome::Chr6),
-        "chr7" => Ok(Chromosome::Chr7),
-        "chr8" => Ok(Chromosome::Chr8),
-        "chr9" => Ok(Chromosome::Chr9),
-        "chr10" => Ok(Chromosome::Chr10),
-        "chr11" => Ok(Chromosome::Chr11),
-        "chr12" => Ok(Chromosome::Chr12),
-        "chr13" => Ok(Chromosome::Chr13),
-        "chr14" => Ok(Chromosome::Chr14),
-        "chr15" => Ok(Chromosome::Chr15),
-        "chr16" => Ok(Chromosome::Chr16),
-        "chr17" => Ok(Chromosome::Chr17),
-        "chr18" => Ok(Chromosome::Chr18),
-        "chr19" => Ok(Chromosome::Chr19),
-        "chr20" => Ok(Chromosome::Chr20),
-        "chr21" => Ok(Chromosome::Chr21),
-        "chr22" => Ok(Chromosome::Chr22),
-        "chrX" => Ok(Chromosome::ChrX),
-        "chrY" => Ok(Chromosome::ChrY),
-        _ => Err(()),
-    }
-}
 
 fn read_json_content(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
     match path.extension() {
@@ -178,133 +145,120 @@ pub(crate) fn write_xlsx_file(
 #[allow(unused)]
 pub(crate) fn write_json_file(
     path: &Path,
+    general_information: &General,
     simple_variant_records: &[SimpleVariantRecord],
     copy_number_records: &[CopyNumberRecord],
     fusion_records: &[FusionRecord],
     biomarker_records: &[BiomarkerRecord],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let simple_variants = simple_variant_records
+    fn map_pathogenic_classification(s: &str) -> String {
+        match PathogenicClassification::from_str(s) {
+            Ok(pathogenic_classification) => match pathogenic_classification {
+                PathogenicClassification::Benign => "1",
+                PathogenicClassification::LikelyBenign => "2",
+                PathogenicClassification::Vus => "3",
+                PathogenicClassification::LikelyPathogenic => "4",
+                PathogenicClassification::Pathogenic => "5",
+            },
+            Err(()) => "",
+        }
+        .to_string()
+    }
+
+    let mut variants = simple_variant_records
         .iter()
-        .map(|record| Snv {
-            allelic_frequency: f64::from_str(&record.allelic_frequency.replace(',', "."))
-                .unwrap_or(0.0),
-            alt_allele: if record.alt_allele.is_empty() {
-                "-".to_string()
+        .map(|record| OsMolekulargenUntersuchung::SimpleVariant {
+            untersucht: record.gene.clone(),
+            genomposition: record.genomic_position.clone(),
+            cdnanomenklatur: record.cdna.clone(),
+            proteinebenenomenklatur: record.protein.clone(),
+            evchromosom: record.chromosome.clone(),
+            evensemblid: record.ensembl_id.clone(),
+            evhgncid: record.hgnc_id.clone(),
+            evhgncsymbol: record.gene.clone(),
+            evhgncname: record.hgnc_name.clone(),
+            evstart: u64::from_str(&record.start).ok(),
+            evende: u64::from_str(&record.end).ok(),
+            evaltnucleotide: if record.alt_allele.is_empty() {
+                "*".to_string()
             } else {
                 record.alt_allele.clone()
             },
-            // Use Chromosome::ChrMt as placeholder for non-present value
-            chromosome: map_chromosome(&record.chromosome).unwrap_or(Chromosome::ChrMt),
-            dna_change: record.cdna.clone(),
-            exon_id: None,
-            external_ids: None,
-            gene: Coding {
-                code: record.gene.clone(),
-                display: Some(record.hgnc_name.clone()),
-                system: None,
-                version: None,
-            },
-            id: String::new(),
-            interpretation: None,
-            localization: None,
-            patient: Reference {
-                display: None,
-                id: String::new(),
-                reference_type: None,
-                system: None,
-            },
-            position: Position {
-                start: record.start.parse().unwrap_or(0.0),
-                end: record.end.parse().ok(),
-            },
-            protein_change: if record.protein.clone().is_empty() {
-                None
-            } else {
-                Some(record.protein.clone())
-            },
-            read_depth: record.read_depth.parse().unwrap_or(0), // To be interpreted as "not present"
-            ref_allele: if record.ref_allele.is_empty() {
-                "-".to_string()
+            evrefnucleotide: if record.ref_allele.is_empty() {
+                "*".to_string()
             } else {
                 record.ref_allele.clone()
             },
-            transcript_id: TranscriptId {
-                system: TranscriptIdSystem::EnsemblOrg,
-                value: record.ensembl_id.clone(),
-            },
+            evreaddepth: u64::from_str(&record.read_depth).ok(),
+            allelfrequenz: f64::from_str(&record.allelic_frequency).ok(),
+            evdbsnpid: record.dbsnp.clone(),
+            pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
         .collect_vec();
 
-    let copy_number_variants = copy_number_records
+    let mut copy_number_variants = copy_number_records
         .iter()
-        .map(|record| Cnv {
-            // Use Chromosome::ChrMt as placeholder for non present value
-            chromosome: map_chromosome(&record.chromosome).unwrap_or(Chromosome::ChrMt),
-            cn_a: None,
-            cn_b: None,
-            cnv_type: CnvCoding {
-                code: if record.cnv_type.contains("loss") {
-                    CnvCodingCode::Loss
-                } else if record
-                    .total_copy_number
-                    .replace(',', ".")
-                    .parse()
-                    .unwrap_or(0.0)
-                    < 3.0
-                {
-                    CnvCodingCode::LowLevelGain
-                } else {
-                    CnvCodingCode::HighLevelGain
-                },
-                display: Some(record.cnv_type.clone()),
-                system: None,
-                version: None,
-            },
-            copy_number_neutral_lo_h: None,
-            end_range: None,
-            external_ids: None,
-            id: String::new(),
-            localization: None,
-            patient: Reference {
-                display: None,
-                id: String::new(),
-                reference_type: None,
-                system: None,
-            },
-            relative_copy_number: None,
-            reported_affected_genes: None,
-            reported_focality: None,
-            start_range: None,
-            total_copy_number: record
-                .total_copy_number
-                .replace(',', ".")
-                .parse::<i64>()
-                .ok(),
+        .map(|record| OsMolekulargenUntersuchung::CopyNumberVariant {
+            untersucht: record.gene.clone(),
+            copynumbervariation: if record.cnv_type.to_ascii_lowercase().contains("loss") {
+                "L"
+            } else if record.cnv_type.to_ascii_lowercase().contains("gain") {
+                "GAIN"
+            } else {
+                ""
+            }
+            .to_string(),
+            cnvchromosom: record.chromosome.clone(),
+            cnvensemblid: record.ensembl_id.clone(),
+            cnvhgncid: record.hgnc_id.clone(),
+            cnvhgncsymbol: record.gene.clone(),
+            cnvhgncname: record.hgnc_name.clone(),
+            cnvtotalcndouble: f64::from_str(&record.total_copy_number).ok(),
+            pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
         .collect_vec();
 
-    let ngs_report_results = NgsReportResults {
-        brcaness: None,
-        copy_number_variants: if copy_number_variants.is_empty() {
-            None
-        } else {
-            Some(copy_number_variants)
-        },
-        dna_fusions: None,
-        hrd_score: None,
-        rna_fusions: None,
-        rna_seqs: None,
-        simple_variants: if simple_variants.is_empty() {
-            None
-        } else {
-            Some(simple_variants)
-        },
-        tmb: None,
-        tumor_cell_content: None,
+    variants.append(&mut copy_number_variants);
+
+    let mut fusion_variants = fusion_records
+        .iter()
+        .map(|record| OsMolekulargenUntersuchung::RnaFusion {
+            untersucht: record.gene.clone(),
+            fusioniertesgen: record.fusion_gene.clone(),
+            fusionrna5ensemblid: record.ensembl_id_5.clone(),
+            fusionrna5hgncid: record.hgnc_id_5.clone(),
+            fusionrna5hgncsymbol: record.hgnc_name_5.clone(),
+            fusionrna5hgncname: record.hgnc_name_5.clone(),
+            fusionrna5transcriptid: record.transcript_id_5.clone(),
+            fusionrna5exonid: record.exon_id_5.clone(),
+            fusionrna5transposition: u64::from_str(&record.transcript_position_5.clone()).ok(),
+            fusionrna5strand: record.strand_5.clone(),
+            fusionrna3ensemblid: record.ensembl_id_3.clone(),
+            fusionrna3hgncid: record.hgnc_id_3.clone(),
+            fusionrna3hgncsymbol: record.hgnc_name_3.clone(),
+            fusionrna3hgncname: record.hgnc_name_3.clone(),
+            fusionrna3transcriptid: record.transcript_id_3.clone(),
+            fusionrna3exonid: record.exon_id_3.clone(),
+            fusionrna3transposition: u64::from_str(&record.transcript_position_3.clone()).ok(),
+            fusionrna3strand: record.strand_3.clone(),
+            fusionrnareportednumread: u64::from_str(&record.number_reported_reads.clone()).ok(),
+            pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
+        })
+        .collect_vec();
+
+    variants.append(&mut fusion_variants);
+
+    let result = OsMolekulargenetik {
+        patient_id: general_information.patient_identifier.pid.clone(),
+        datum: general_information.order_date.clone(),
+        einsendenummer: general_information.patient_identifier.h_number.clone(),
+        referenzgenom: general_information.ref_genome_version.to_string(),
+        molekulargenuntersuchung: variants,
     };
-    let json_content = serde_json::to_string_pretty(&ngs_report_results)?;
+
+    let json_content = serde_json::to_string_pretty(&result)?;
     let mut output_file = path.to_path_buf();
-    output_file.set_extension("dnpm.json");
+    output_file.set_extension("os_molgen.json");
     fs::write(output_file, json_content).map_err(Into::into)
 }
 

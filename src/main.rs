@@ -1,12 +1,12 @@
 use crate::cli::Cli;
-use crate::export_record::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use crate::files::read_file;
 use clap::Parser;
+use export::table::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use mhguide_umr::{MhGuide, ResultType, Variant};
 use rayon::prelude::*;
 
 mod cli;
-mod export_record;
+mod export;
 mod files;
 mod hgnc;
 
@@ -129,6 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cli.json {
         return files::write_json_file(
             &cli.input_file,
+            &mhguide.general,
             &simple_variant_records,
             &copy_number_records,
             &fusion_records,
