@@ -1,7 +1,7 @@
 use crate::export::json::{OsMolekulargenUntersuchung, OsMolekulargenetik};
 use crate::export::table::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use itertools::Itertools;
-use mhguide_umr::MhGuide;
+use mhguide_umr::{General, MhGuide, PathogenicClassification};
 use rust_xlsxwriter::{Format, Workbook};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -145,11 +145,26 @@ pub(crate) fn write_xlsx_file(
 #[allow(unused)]
 pub(crate) fn write_json_file(
     path: &Path,
+    general_information: &General,
     simple_variant_records: &[SimpleVariantRecord],
     copy_number_records: &[CopyNumberRecord],
     fusion_records: &[FusionRecord],
     biomarker_records: &[BiomarkerRecord],
 ) -> Result<(), Box<dyn std::error::Error>> {
+    fn map_pathogenic_classification(s: &str) -> String {
+        match PathogenicClassification::from_str(s) {
+            Ok(pathogenic_classification) => match pathogenic_classification {
+                PathogenicClassification::Benign => "1",
+                PathogenicClassification::LikelyBenign => "2",
+                PathogenicClassification::Vus => "3",
+                PathogenicClassification::LikelyPathogenic => "4",
+                PathogenicClassification::Pathogenic => "5",
+            },
+            Err(()) => "",
+        }
+        .to_string()
+    }
+
     let mut variants = simple_variant_records
         .iter()
         .map(|record| OsMolekulargenUntersuchung::SimpleVariant {
@@ -177,7 +192,7 @@ pub(crate) fn write_json_file(
             evreaddepth: u64::from_str(&record.read_depth).ok(),
             allelfrequenz: f64::from_str(&record.allelic_frequency).ok(),
             evdbsnpid: record.dbsnp.clone(),
-            pathogenitaetsklasse: record.classification.clone(),
+            pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
         .collect_vec();
 
@@ -185,14 +200,21 @@ pub(crate) fn write_json_file(
         .iter()
         .map(|record| OsMolekulargenUntersuchung::CopyNumberVariant {
             untersucht: record.gene.clone(),
-            copynumbervariation: record.cnv_type.clone(),
+            copynumbervariation: if record.cnv_type.to_ascii_lowercase().contains("loss") {
+                "L"
+            } else if record.cnv_type.to_ascii_lowercase().contains("gain") {
+                "GAIN"
+            } else {
+                ""
+            }
+            .to_string(),
             cnvchromosom: record.chromosome.clone(),
             cnvensemblid: record.ensembl_id.clone(),
             cnvhgncid: record.hgnc_id.clone(),
             cnvhgncsymbol: record.gene.clone(),
             cnvhgncname: record.hgnc_name.clone(),
             cnvtotalcndouble: f64::from_str(&record.total_copy_number).ok(),
-            pathogenitaetsklasse: record.classification.clone(),
+            pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
         .collect_vec();
 
@@ -220,29 +242,17 @@ pub(crate) fn write_json_file(
             fusionrna3transposition: u64::from_str(&record.transcript_position_3.clone()).ok(),
             fusionrna3strand: record.strand_3.clone(),
             fusionrnareportednumread: u64::from_str(&record.number_reported_reads.clone()).ok(),
-            pathogenitaetsklasse: record.classification.clone(),
+            pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
         .collect_vec();
 
     variants.append(&mut fusion_variants);
 
     let result = OsMolekulargenetik {
-        patient_id: simple_variant_records
-            .iter()
-            .map(|record| record.h_nummer.clone())
-            .next_back()
-            .unwrap_or_default(),
-        datum: String::new(),
-        einsendenummer: simple_variant_records
-            .iter()
-            .map(|record| record.h_nummer.clone())
-            .next_back()
-            .unwrap_or_default(),
-        referenzgenom: simple_variant_records
-            .iter()
-            .map(|record| record.ref_genome.clone())
-            .next_back()
-            .unwrap_or_default(),
+        patient_id: general_information.patient_identifier.pid.clone(),
+        datum: general_information.order_date.clone(),
+        einsendenummer: general_information.patient_identifier.h_number.clone(),
+        referenzgenom: general_information.ref_genome_version.to_string(),
         molekulargenuntersuchung: variants,
     };
 

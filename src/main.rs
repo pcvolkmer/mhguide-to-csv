@@ -129,6 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cli.json {
         return files::write_json_file(
             &cli.input_file,
+            &mhguide.general,
             &simple_variant_records,
             &copy_number_records,
             &fusion_records,
