@@ -542,11 +542,11 @@ pub(crate) struct BiomarkerRecord {
     #[serde(rename = "Ergebnis")]
     ergebnis: String,
     #[serde(rename = "HRD - Score/Ergebnis")]
-    hrd: String,
+    pub(crate) hrd: String,
     #[serde(rename = "MSI - Prozentwert")]
-    msi: String,
+    pub(crate) msi: String,
     #[serde(rename = "TMB - Tumor Mutational Burden")]
-    tmb: String,
+    pub(crate) tmb: String,
 }
 
 impl BiomarkerRecord {

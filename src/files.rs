@@ -1,3 +1,4 @@
+use crate::export::json;
 use crate::export::json::{OsMolekulargenUntersuchung, OsMolekulargenetik};
 use crate::export::table::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use itertools::Itertools;
@@ -248,12 +249,48 @@ pub(crate) fn write_json_file(
 
     variants.append(&mut fusion_variants);
 
+    let biomarker = biomarker_records
+        .iter()
+        .filter_map(|record| {
+            let hrd = f64::from_str(&record.hrd.replace(',', ".")).ok();
+            if hrd.is_some() {
+                return Some(json::Biomarker::Hrd {
+                    score: hrd,
+                    lst: None,
+                    loh: None,
+                    tai: None,
+                    bewertung: None,
+                });
+            }
+
+            let msi = f64::from_str(&record.msi.replace(',', ".")).ok();
+            if msi.is_some() {
+                return Some(json::Biomarker::Msi {
+                    seqprozentwert: msi,
+                    pcrergebnis: None,
+                    immunergebnismsi: None,
+                });
+            }
+
+            let tmb = f64::from_str(&record.tmb.replace(',', ".")).ok();
+            if tmb.is_some() {
+                return Some(json::Biomarker::Tmb {
+                    tumormutationalburden: tmb,
+                    bewertung: None,
+                });
+            }
+
+            None
+        })
+        .collect_vec();
+
     let result = OsMolekulargenetik {
         patient_id: general_information.patient_identifier.pid.clone(),
         datum: general_information.order_date.clone(),
         einsendenummer: general_information.patient_identifier.h_number.clone(),
         referenzgenom: general_information.ref_genome_version.to_string(),
         molekulargenuntersuchung: variants,
+        biomarker,
     };
 
     let json_content = serde_json::to_string_pretty(&result)?;
