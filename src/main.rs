@@ -205,6 +205,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 )
                 .basic_auth(username, Some(password))
                 .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
                 .body(json)
                 .send();
 
