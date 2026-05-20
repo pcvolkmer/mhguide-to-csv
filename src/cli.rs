@@ -17,6 +17,20 @@ pub(crate) enum SubCommand {
         convert_args: ConvertArgs,
     },
     #[command(
+        name = "push",
+        about = "Veröffentliche und aktualisiere Daten in Onkostar"
+    )]
+    Push {
+        #[command(flatten)]
+        convert_args: ConvertArgs,
+        #[arg(
+            long,
+            help = "Onkostar-URL",
+            default_value = "http://localhost:8080/onkostar"
+        )]
+        url: String,
+    },
+    #[command(
         name = "json-schema",
         about = "Schreibe JSON-Schema für JSON-Export in Standardausgabe"
     )]

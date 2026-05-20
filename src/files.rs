@@ -152,6 +152,28 @@ pub(crate) fn write_json_file(
     fusion_records: &[FusionRecord],
     biomarker_records: &[BiomarkerRecord],
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let json_content = get_json_data(
+        path,
+        mh_guide,
+        simple_variant_records,
+        copy_number_records,
+        fusion_records,
+        biomarker_records,
+    )?;
+    let mut output_file = path.to_path_buf();
+    output_file.set_extension("os_molgen.json");
+    fs::write(output_file, json_content).map_err(Into::into)
+}
+
+#[allow(unused)]
+pub(crate) fn get_json_data(
+    path: &Path,
+    mh_guide: &MhGuide,
+    simple_variant_records: &[SimpleVariantRecord],
+    copy_number_records: &[CopyNumberRecord],
+    fusion_records: &[FusionRecord],
+    biomarker_records: &[BiomarkerRecord],
+) -> Result<String, Box<dyn std::error::Error>> {
     fn map_pathogenic_classification(s: &str) -> Option<String> {
         let result = match PathogenicClassification::from_str(s) {
             Ok(pathogenic_classification) => match pathogenic_classification {
@@ -311,10 +333,7 @@ pub(crate) fn write_json_file(
         },
     };
 
-    let json_content = serde_json::to_string_pretty(&result)?;
-    let mut output_file = path.to_path_buf();
-    output_file.set_extension("os_molgen.json");
-    fs::write(output_file, json_content).map_err(Into::into)
+    serde_json::to_string_pretty(&result).map_err(Into::into)
 }
 
 #[cfg(test)]

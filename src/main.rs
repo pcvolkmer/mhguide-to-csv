@@ -2,6 +2,7 @@ use crate::cli::{Cli, SubCommand};
 use crate::export::json::OsMolekulargenetik;
 use crate::files::read_file;
 use clap::Parser;
+use dialoguer::{Input, Password};
 use export::table::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use mhguide_umr::{MhGuide, ResultType, Variant};
 use rayon::prelude::*;
@@ -101,7 +102,7 @@ fn biomarker_records(mhguide: &MhGuide) -> Vec<BiomarkerRecord> {
 
 fn selected_variants<'a>(mhguide: &'a MhGuide, cli: &Cli) -> Vec<&'a Variant> {
     match &cli.command {
-        SubCommand::Convert { convert_args, .. } => {
+        SubCommand::Convert { convert_args, .. } | SubCommand::Push { convert_args, .. } => {
             if convert_args.all_variants {
                 mhguide.all_variants()
             } else if convert_args.oncogenic {
@@ -154,6 +155,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &fusion_records,
                 &biomarker_records,
             )
+        }
+        SubCommand::Push { convert_args, url } => {
+            let mhguide = read_file(&convert_args.input_file)?;
+
+            let simple_variant_records = simple_variant_records(&mhguide, &cli);
+            let copy_number_records = copy_number_records(&mhguide, &cli);
+            let fusion_records = fusion_records(&mhguide);
+            let biomarker_records = biomarker_records(&mhguide);
+
+            let json = files::get_json_data(
+                &convert_args.input_file,
+                &mhguide,
+                &simple_variant_records,
+                &copy_number_records,
+                &fusion_records,
+                &biomarker_records,
+            )?;
+
+            let username: String = Input::new().with_prompt("Benutzername").interact_text()?;
+            let password: String = Password::new().with_prompt("Passwort").interact()?;
+
+            let client = reqwest::blocking::Client::builder()
+                .user_agent("mhguide-to-csv")
+                .build()?;
+
+            let response = client
+                .put(
+                    format!(
+                        "{}/x-api/patient/{}/molgen/{}",
+                        url.strip_suffix("/").unwrap_or(url),
+                        mhguide.general.patient_identifier.pid,
+                        mhguide.general.patient_identifier.h_number
+                    )
+                    .as_str(),
+                )
+                .basic_auth(username, Some(password))
+                .header("Content-Type", "application/json")
+                .body(json)
+                .send();
+
+            if let Ok(response) = response {
+                if response.status().is_success() {
+                    println!("Daten erfolgreich in Onkostar veröffentlicht");
+                } else {
+                    println!(
+                        "Fehler beim veröffentlichen der Daten in Onkostar: {}",
+                        response.status()
+                    );
+                }
+            }
+            Ok(())
         }
         SubCommand::JsonSchema => {
             let schema = schema_for!(OsMolekulargenetik);
