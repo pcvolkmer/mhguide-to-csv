@@ -15,7 +15,7 @@ Auch hier wird der Dateiname beibehalten, die Dateiendung jedoch durch `.xlsx` e
 `REPORT_NARRATIVE` aufgeführt sind.
 
 ```
-Usage: mhguide-to-csv [OPTIONS] <INPUT_FILE>
+Usage: mhguide-to-csv convert [OPTIONS] <INPUT_FILE>
 
 Arguments:
   <INPUT_FILE>  Zu lesende JSON-Datei

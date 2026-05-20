@@ -1,10 +1,30 @@
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(author, version, about)]
 #[command(arg_required_else_help(true))]
 pub(crate) struct Cli {
+    #[command(subcommand)]
+    pub(crate) command: SubCommand,
+}
+
+#[derive(Subcommand)]
+pub(crate) enum SubCommand {
+    #[command(name = "convert", about = "Konvertiere Daten in angegebenes Format")]
+    Convert {
+        #[command(flatten)]
+        convert_args: ConvertArgs,
+    },
+    #[command(
+        name = "json-schema",
+        about = "Schreibe JSON-Schema für JSON-Export in Standardausgabe"
+    )]
+    JsonSchema,
+}
+
+#[derive(Args)]
+pub(crate) struct ConvertArgs {
     #[arg(help = "Zu lesende JSON-Datei")]
     pub(crate) input_file: PathBuf,
 

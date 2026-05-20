@@ -11,11 +11,13 @@ readme = "README.md"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 csv = "1.4"
-rust_xlsxwriter = { version = "0.94", features = ["serde"] }
+rust_xlsxwriter = { version = "0.95", features = ["serde"] }
 zip = "8.1"
 clap = { version = "4.6", features = ["std", "help", "usage", "derive"], default-features = false }
-rayon = "1.11"
+rayon = "1.12"
 itertools = "0.14"
+schemars = { version = "1.2.1", features = ["chrono04"] }
+chrono = {  version = "0.4", features = ["serde"] }
 mhguide-umr = { git = "https://github.com/pcvolkmer/mhguide-umr", branch = "main" }
 
 [profile.release]

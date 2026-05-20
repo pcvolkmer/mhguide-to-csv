@@ -1,131 +1,112 @@
+use schemars::JsonSchema;
 use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[schemars(
+    deny_unknown_fields,
+    title = "mhguide-to-csv and xapi JSON schema for OS.Molekulargenetik"
+)]
 pub(crate) struct OsMolekulargenetik {
-    #[serde(skip_serializing_if = "String::is_empty")]
     pub(crate) patient_id: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub(crate) datum: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
+    pub(crate) datum: chrono::NaiveDate,
     pub(crate) einsendenummer: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
     pub(crate) referenzgenom: String,
 
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub(crate) molekulargenuntersuchung: Vec<OsMolekulargenUntersuchung>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub(crate) biomarker: Vec<Biomarker>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) molekulargenuntersuchung: Option<Vec<OsMolekulargenUntersuchung>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) biomarker: Option<Vec<Biomarker>>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(tag = "ergebnis")]
 pub(crate) enum OsMolekulargenUntersuchung {
     #[serde(rename = "P")]
     SimpleVariant {
-        #[serde(skip_serializing_if = "String::is_empty")]
         untersucht: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         genomposition: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         cdnanomenklatur: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        proteinebenenomenklatur: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        proteinebenenomenklatur: Option<String>,
         evchromosom: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         evensemblid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         evhgncid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        evhgncsymbol: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        evhgncname: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        evhgncsymbol: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        evhgncname: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         evstart: Option<u64>,
         #[serde(skip_serializing_if = "Option::is_none")]
         evende: Option<u64>,
-        #[serde(skip_serializing_if = "String::is_empty")]
         evaltnucleotide: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         evrefnucleotide: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         evreaddepth: Option<u64>,
         #[serde(skip_serializing_if = "Option::is_none")]
         allelfrequenz: Option<f64>,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        evdbsnpid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        pathogenitaetsklasse: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        evdbsnpid: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pathogenitaetsklasse: Option<String>,
     },
     #[serde(rename = "CNV")]
     CopyNumberVariant {
-        #[serde(skip_serializing_if = "String::is_empty")]
         untersucht: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         copynumbervariation: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         cnvchromosom: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        cnvensemblid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        cnvhgncid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        cnvhgncsymbol: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        cnvhgncname: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cnvensemblid: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cnvhgncid: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cnvhgncsymbol: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cnvhgncname: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         cnvtotalcndouble: Option<f64>,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        pathogenitaetsklasse: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pathogenitaetsklasse: Option<String>,
     },
     #[serde(rename = "F")]
     RnaFusion {
-        #[serde(skip_serializing_if = "String::is_empty")]
         untersucht: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         fusioniertesgen: String,
 
-        #[serde(skip_serializing_if = "String::is_empty")]
-        fusionrna5ensemblid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        fusionrna5ensemblid: Option<String>,
         fusionrna5hgncid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        fusionrna5hgncsymbol: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        fusionrna5hgncname: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        fusionrna5hgncsymbol: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        fusionrna5hgncname: Option<String>,
         fusionrna5transcriptid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         fusionrna5exonid: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         fusionrna5transposition: Option<u64>,
-        #[serde(skip_serializing_if = "String::is_empty")]
         fusionrna5strand: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        fusionrna3ensemblid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        fusionrna3ensemblid: Option<String>,
         fusionrna3hgncid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        fusionrna3hgncsymbol: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        fusionrna3hgncname: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        fusionrna3hgncsymbol: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        fusionrna3hgncname: Option<String>,
         fusionrna3transcriptid: String,
-        #[serde(skip_serializing_if = "String::is_empty")]
         fusionrna3exonid: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         fusionrna3transposition: Option<u64>,
-        #[serde(skip_serializing_if = "String::is_empty")]
         fusionrna3strand: String,
 
         #[serde(skip_serializing_if = "Option::is_none")]
         fusionrnareportednumread: Option<u64>,
-        #[serde(skip_serializing_if = "String::is_empty")]
-        pathogenitaetsklasse: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pathogenitaetsklasse: Option<String>,
     },
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(tag = "komplexerbiomarker")]
 pub(crate) enum Biomarker {
     #[serde(rename = "HRD")]
@@ -160,7 +141,7 @@ pub(crate) enum Biomarker {
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub(crate) enum MsiPcrErgebnis {
     #[serde(rename = "MSS")]
     Stable,
@@ -171,7 +152,7 @@ pub(crate) enum MsiPcrErgebnis {
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub(crate) enum MsiImmunergebnis {
     #[serde(rename = "MMP")]
     MmrProficient,
@@ -180,7 +161,7 @@ pub(crate) enum MsiImmunergebnis {
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub(crate) enum MolMarkerBewertung {
     #[serde(rename = "H")]
     High,
