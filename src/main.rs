@@ -157,6 +157,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
         }
         SubCommand::Push { convert_args, url } => {
+            #[derive(serde::Deserialize)]
+            struct Response {
+                success: bool,
+                #[serde(rename = "addedVariants")]
+                added_variants: usize,
+                #[serde(rename = "removedVariants")]
+                removed_variants: usize,
+                #[serde(rename = "addedBiomarkers")]
+                added_biomarkers: usize,
+                #[serde(rename = "removedBiomarkers")]
+                removed_biomarkers: usize,
+            }
+
             let mhguide = read_file(&convert_args.input_file)?;
 
             let simple_variant_records = simple_variant_records(&mhguide, &cli);
@@ -198,12 +211,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Ok(response) = response {
                 if response.status().is_success() {
                     println!("Daten erfolgreich in Onkostar veröffentlicht");
+                    if let Ok(response) = serde_json::from_str::<Response>(&response.text()?) {
+                        println!(
+                            "Varianten - hinzugefügt: {}, gelöscht: {}",
+                            response.added_variants, response.removed_variants
+                        );
+                        println!(
+                            "Biomarker - hinzugefügt: {}, gelöscht: {}",
+                            response.added_biomarkers, response.removed_biomarkers
+                        );
+                    }
                 } else {
                     println!(
-                        "Fehler beim veröffentlichen der Daten in Onkostar: {}",
+                        "Fehler beim Veröffentlichen der Daten in Onkostar: {}",
                         response.status()
                     );
                 }
+            } else {
+                println!("Fehler beim Senden der Daten an Onkostar");
             }
             Ok(())
         }
