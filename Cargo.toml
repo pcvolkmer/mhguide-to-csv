@@ -18,8 +18,9 @@ rayon = "1.12"
 itertools = "0.14"
 schemars = { version = "1.2.1", features = ["chrono04"] }
 chrono = {  version = "0.4", features = ["serde"] }
+console = "0.16"
 dialoguer = { version = "0.12", features = ["password"] }
-reqwest = { version = "0.13", features = ["blocking"], default-features = false }
+reqwest = { version = "0.13", features = ["blocking", "json"], default-features = false }
 mhguide-umr = { git = "https://github.com/pcvolkmer/mhguide-umr", branch = "main" }
 
 [profile.release]

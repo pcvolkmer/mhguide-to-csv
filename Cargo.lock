@@ -929,6 +929,7 @@ version = "0.5.0"
 dependencies = [
  "chrono",
  "clap",
+ "console",
  "csv",
  "dialoguer",
  "itertools",
@@ -1173,6 +1174,8 @@ dependencies = [
  "log",
  "percent-encoding",
  "pin-project-lite",
+ "serde",
+ "serde_json",
  "sync_wrapper",
  "tokio",
  "tower",

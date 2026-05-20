@@ -2,6 +2,7 @@ use crate::cli::{Cli, SubCommand};
 use crate::export::json::OsMolekulargenetik;
 use crate::files::read_file;
 use clap::Parser;
+use console::style;
 use dialoguer::{Input, Password};
 use export::table::{BiomarkerRecord, CopyNumberRecord, FusionRecord, SimpleVariantRecord};
 use mhguide_umr::{MhGuide, ResultType, Variant};
@@ -159,7 +160,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         SubCommand::Push { convert_args, url } => {
             #[derive(serde::Deserialize)]
             struct Response {
-                success: bool,
                 #[serde(rename = "addedVariants")]
                 added_variants: usize,
                 #[serde(rename = "removedVariants")]
@@ -210,25 +210,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if let Ok(response) = response {
                 if response.status().is_success() {
-                    println!("Daten erfolgreich in Onkostar veröffentlicht");
-                    if let Ok(response) = serde_json::from_str::<Response>(&response.text()?) {
+                    println!(
+                        "{}",
+                        style("Daten erfolgreich in Onkostar veröffentlicht").green()
+                    );
+                    if let Ok(response) = &response.json::<Response>() {
                         println!(
-                            "Varianten - hinzugefügt: {}, gelöscht: {}",
-                            response.added_variants, response.removed_variants
+                            "{}: {} hinzugefügt, {} gelöscht",
+                            style("Varianten").bold().underlined(),
+                            style(response.added_variants).green(),
+                            style(response.removed_variants).red()
                         );
                         println!(
-                            "Biomarker - hinzugefügt: {}, gelöscht: {}",
-                            response.added_biomarkers, response.removed_biomarkers
+                            "{}: {} hinzugefügt, {} gelöscht",
+                            style("Biomarker").bold().underlined(),
+                            style(response.added_biomarkers).green(),
+                            style(response.removed_biomarkers).red()
                         );
                     }
                 } else {
                     println!(
-                        "Fehler beim Veröffentlichen der Daten in Onkostar: {}",
+                        "{}: {}",
+                        style("Fehler beim Veröffentlichen der Daten in Onkostar").red(),
                         response.status()
                     );
                 }
             } else {
-                println!("Fehler beim Senden der Daten an Onkostar");
+                println!(
+                    "{}",
+                    style("Fehler beim Senden der Daten an Onkostar").red()
+                );
             }
             Ok(())
         }
