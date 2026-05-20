@@ -222,7 +222,7 @@ pub(crate) fn get_json_data(
                 record.ref_allele.clone()
             },
             evreaddepth: u64::from_str(&record.read_depth).ok(),
-            allelfrequenz: f64::from_str(&record.allelic_frequency).ok(),
+            allelfrequenz: f64::from_str(&record.allelic_frequency.replace(',', ".")).ok(),
             evdbsnpid: empty_option(&record.dbsnp),
             pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
@@ -245,7 +245,7 @@ pub(crate) fn get_json_data(
             cnvhgncid: empty_option(&record.hgnc_id),
             cnvhgncsymbol: empty_option(&record.gene),
             cnvhgncname: empty_option(&record.hgnc_name),
-            cnvtotalcndouble: f64::from_str(&record.total_copy_number).ok(),
+            cnvtotalcndouble: f64::from_str(&record.total_copy_number.replace(',', ".")).ok(),
             pathogenitaetsklasse: map_pathogenic_classification(&record.classification),
         })
         .collect_vec();
