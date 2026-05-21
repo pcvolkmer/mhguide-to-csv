@@ -162,10 +162,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             struct Response {
                 #[serde(rename = "addedVariants")]
                 added_variants: usize,
+                #[serde(rename = "updatedVariants")]
+                updated_variants: Option<usize>,
                 #[serde(rename = "removedVariants")]
                 removed_variants: usize,
                 #[serde(rename = "addedBiomarkers")]
                 added_biomarkers: usize,
+                #[serde(rename = "updatedBiomarkers")]
+                updated_biomarkers: Option<usize>,
                 #[serde(rename = "removedBiomarkers")]
                 removed_biomarkers: usize,
             }
@@ -217,15 +221,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     );
                     if let Ok(response) = &response.json::<Response>() {
                         println!(
-                            "{}: {} hinzugefügt, {} gelöscht",
+                            "{: >3}: {: >3} hinzugefügt, {: >3} aktualisiert, {: >3} gelöscht",
                             style("Varianten").bold().underlined(),
                             style(response.added_variants).green(),
+                            style(match response.updated_variants {
+                                Some(value) => value.to_string(),
+                                None => "-".to_string(),
+                            })
+                            .yellow(),
                             style(response.removed_variants).red()
                         );
                         println!(
-                            "{}: {} hinzugefügt, {} gelöscht",
+                            "{: >3}: {: >3} hinzugefügt, {: >3} aktualisiert, {: >3} gelöscht",
                             style("Biomarker").bold().underlined(),
                             style(response.added_biomarkers).green(),
+                            style(match response.updated_biomarkers {
+                                Some(value) => value.to_string(),
+                                None => "-".to_string(),
+                            })
+                            .yellow(),
                             style(response.removed_biomarkers).red()
                         );
                     }
