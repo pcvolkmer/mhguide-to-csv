@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.5.0...v0.6.0) (2026-05-21)
+
+
+### Features
+
+* add accept header to request JSON response ([f0067cb](https://github.com/pcvolkmer/mhguide-to-csv/commit/f0067cbdfc986941cc86da5b763750294081f65a))
+* add complex biomarkers ([#41](https://github.com/pcvolkmer/mhguide-to-csv/issues/41)) ([78586fc](https://github.com/pcvolkmer/mhguide-to-csv/commit/78586fc6ab222934847b245cc506b5b1da0c72b6))
+* add subcommand to generate JSON schema ([#42](https://github.com/pcvolkmer/mhguide-to-csv/issues/42)) ([41c3f74](https://github.com/pcvolkmer/mhguide-to-csv/commit/41c3f74e1fd217a6779c830b470d55572fab029a))
+* add subcommand to push JSON data to Onkostar ([#43](https://github.com/pcvolkmer/mhguide-to-csv/issues/43)) ([4f4a2d4](https://github.com/pcvolkmer/mhguide-to-csv/commit/4f4a2d4d0ca73d0d588afdefb8f7a43876951cbe))
+* export as JSON similar to OS.Molekulargenetik ([#39](https://github.com/pcvolkmer/mhguide-to-csv/issues/39)) ([6586556](https://github.com/pcvolkmer/mhguide-to-csv/commit/6586556e61e7c9ce4607e5fa14d90e952d763202))
+* formatted output ([ee55e06](https://github.com/pcvolkmer/mhguide-to-csv/commit/ee55e069dd024e2b69794789b4d2f997da4894b0))
+* print updated variants and biomarkers ([#44](https://github.com/pcvolkmer/mhguide-to-csv/issues/44)) ([4cae77c](https://github.com/pcvolkmer/mhguide-to-csv/commit/4cae77c924f62e0a2378be0aeaa992ca9eb0d7a2))
+* show added and removed entries ([c32917a](https://github.com/pcvolkmer/mhguide-to-csv/commit/c32917af4405b08bf2cab82c3080dab009c01c24))
+
+
+### Miscellaneous Chores
+
+* release 0.6.0 ([8f71ad4](https://github.com/pcvolkmer/mhguide-to-csv/commit/8f71ad46e28883a9e01fd0879a5b1660e38c1be6))
+
 ## [0.5.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.4.1...v0.5.0) (2026-05-07)
 
 
