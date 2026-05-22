@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.6.0...v0.6.1) (2026-05-22)
+
+
+### deps
+
+* update mhguide-umr ([757c645](https://github.com/pcvolkmer/mhguide-to-csv/commit/757c6450eb40c7275a9615811649671982ec3a50))
+
 ## [0.6.0](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.5.0...v0.6.0) (2026-05-21)
 
 
