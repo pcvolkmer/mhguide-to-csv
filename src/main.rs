@@ -263,5 +263,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{}", serde_json::to_string_pretty(&schema)?);
             Ok(())
         }
+        SubCommand::CheckReportNarrative { convert_args } => {
+            let mhguide = read_file(&convert_args.input_file)?;
+
+            if let Some(lines) = mhguide.unparsable_report_narrative_lines() {
+                if lines.is_empty() {
+                    eprintln!(
+                        "{}",
+                        style("Keine Probleme in REPORT_NARRATIVE gefunden").green()
+                    );
+                    return Ok(());
+                }
+                eprintln!(
+                    "{}: {}",
+                    style("Probleme in REPORT_NARRATIVE").red(),
+                    style(lines.len()).bold().red(),
+                );
+                for (idx, line) in lines.iter().enumerate() {
+                    eprintln!(" {: >2}: '{}'", idx + 1, line);
+                }
+                return Ok(());
+            }
+
+            eprintln!(
+                "{}",
+                style("Keine Inhalte für REPORT_NARRATIVE gefunden").red()
+            );
+
+            Ok(())
+        }
     }
 }

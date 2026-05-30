@@ -35,6 +35,14 @@ pub(crate) enum SubCommand {
         about = "Schreibe JSON-Schema für JSON-Export in Standardausgabe"
     )]
     JsonSchema,
+    #[command(
+        name = "check-report-narrative",
+        about = "Prüfe auf Probleme in 'REPORT_NARRATIVE'"
+    )]
+    CheckReportNarrative {
+        #[command(flatten)]
+        convert_args: ConvertArgs,
+    },
 }
 
 #[derive(Args)]

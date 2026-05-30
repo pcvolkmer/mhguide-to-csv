@@ -586,9 +586,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.10.0"
+version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb92f162bf56536459fc83c79b974bb12837acfed43d6bc370a7916d0ae15ecc"
+checksum = "55281c53a1894c864990125767da440a4e630446785086f52523b20033b74498"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -898,7 +898,7 @@ dependencies = [
 [[package]]
 name = "mhguide-umr"
 version = "0.0.0"
-source = "git+https://github.com/pcvolkmer/mhguide-umr?branch=main#11d04559a246a52a9b96d0464c3f2c0575652ec9"
+source = "git+https://github.com/pcvolkmer/mhguide-umr?branch=main#58eb7cecb37bbe51811331d75f1ba1e724f832aa"
 dependencies = [
  "rayon",
  "regex",
@@ -1504,9 +1504,9 @@ checksum = "8e28f89b80c87b8fb0cf04ab448d5dd0dd0ade2f8891bae878de66a75a28600e"
 
 [[package]]
 name = "typenum"
-version = "1.20.0"
+version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40ce102ab67701b8526c123c1bab5cbe42d7040ccfd0f64af1a385808d2f43de"
+checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 
 [[package]]
 name = "unicode-ident"
