@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.2](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.6.1...v0.6.2) (2026-05-30)
+
+
+### Features
+
+* check for problems in REPORT_NARRATIVE ([#49](https://github.com/pcvolkmer/mhguide-to-csv/issues/49)) ([7f557a8](https://github.com/pcvolkmer/mhguide-to-csv/commit/7f557a89ac040e7c8e9c289b8ef753a8615fa1bb))
+* update parser for HRD score from REPORT_NARRATIVE ([#46](https://github.com/pcvolkmer/mhguide-to-csv/issues/46)) ([c8cf048](https://github.com/pcvolkmer/mhguide-to-csv/commit/c8cf048837819297770be2570b0411d9d40f138d))
+* update parser to ignore missing REPORT_NARRATIVE ([#48](https://github.com/pcvolkmer/mhguide-to-csv/issues/48)) ([d5319db](https://github.com/pcvolkmer/mhguide-to-csv/commit/d5319db7ea21bb8702c38fb938d1930faf7ddef3))
+
 ## [0.6.1](https://github.com/pcvolkmer/mhguide-to-csv/compare/v0.6.0...v0.6.1) (2026-05-22)
 
 
